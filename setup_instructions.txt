@@ -12,3 +12,11 @@
 5. run the app:
     uvicorn app.main:app --reload, adjusted to your actual module path.
     hen check http://localhost:8000/docs
+6. helpful fastapi youtube videos and docs:
+    https://youtube.com/playlist?list=PL-osiE80TeTsak-c-QsVeg0YYG_0TeyXI&si=69hYKHaYfHZNmXkk
+    https://fastapi.tiangolo.com/learn/
+7. helpful python youtube videos and doc:
+    https://youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU&si=kdvHneLNjqG61iMe
+    https://docs.python.org/3/
+8. helpful postgresql/pgadmin video:
+    https://youtu.be/SpfIwlAYaKk?si=lI9yz4RTcWGDidjG
