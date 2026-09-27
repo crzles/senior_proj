@@ -1,0 +1,28 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+
+# Environments
+virtmach/
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+#enviorment variables, secrets
+.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class
+*.pyc
+*.so
+
+#IDE, Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
