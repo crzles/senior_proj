@@ -1,11 +1,11 @@
 # just here for the sake of the skeleton!
-from app.database import Base
 #example of db att types
 from sqlalchemy import Column, Integer, String, TIMESTAMP, Text, text
+from app.database import Base
 
 #example - not complete
-class User(Base):
-    __tablename__ = "users"
+class App_User(Base):
+    __tablename__ = "app_user"
 
     id = Column(Integer, primary_key=True, nullable=False)
     email = Column(String(255), nullable=False)

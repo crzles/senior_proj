@@ -1,0 +1,14 @@
+1. create and activate a virtual enviornment:
+    python -m venv venv
+    Mac/Linux: source venv/bin/activate
+    Windows: venv\Scripts\activate
+2. install dependecies:
+    pip install -r requirements.txt
+3. create a local Postgres database(you may delete previous DB you created on postgresql called medtracker):
+    our new database name for the project will be PillBug, everyone must have the same name.
+4. create a .env file that includes:
+    DATABASE_URL=postgresql://[user]:[password]@[host]:[port]/PillBug
+    SECRET_KEY= (to generate a random secret key, type command: openssl rand -hex 32, paste the string here)
+5. run the app:
+    uvicorn app.main:app --reload, adjusted to your actual module path.
+    hen check http://localhost:8000/docs
