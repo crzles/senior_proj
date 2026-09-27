@@ -1,0 +1,31 @@
+#sync your branch with main's updated changes
+1. git checkout your-branch
+2. git pull origin main   # or: git checkout main && git pull && git checkout your-branch && git merge main
+
+#commit your work throughout the day on your branch
+git add .
+git commit -m "did xyz"
+git push    #this pushes to origin/your-branch
+
+#EOD merge/open a PR of your work into main (IMPORTANT)
+1. go to the repo on github
+2. click on a banner that says "your-branch had recent pushes - compare & pull request"
+    or go to the 'pull requests' tab click 'new pull request'
+3. set base: main and compare: your-branch
+4. add title and description of any changes
+5. click 'create pull request'
+6. next teamates will review changes made and approve of them
+7. once approved click 'merge pull request'
+8. confirm the merge
+9. sync your machine: 
+    git checkout main
+    git pull
+
+alternatively, you can merge/open a PR on your terminal with github CLI(gh),
+must have it installed:
+1. gh pr create --base main --head your-branch --title "title" --body "description"
+3. next teamates will review changes made and approve of them
+4. once approved run: gh pr merge --merge
+9. sync your machine: 
+    git checkout main
+    git pull

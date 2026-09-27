@@ -16,9 +16,8 @@ app = FastAPI()
 #static directory
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
-templates = Jinja2Templates(directory="templates")
 #example - loads frontend html templates
-# env = Environment(loader=FileSystemLoader("frontend/templates"))
+templates = Jinja2Templates(directory="templates")
 
 #an endpoint
 @app.get("/")
