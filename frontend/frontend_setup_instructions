@@ -1,0 +1,46 @@
+1. Navigate to the React frontend:
+
+cd frontend/react-app
+
+2. Install the frontend dependencies:
+
+npm install
+
+3. Start the React development server:
+
+npm run dev
+
+4. Open the URL shown in the terminal, usually:
+
+http://localhost:5173/
+
+FRONTEND TECHNOLOGIES
+
+- React
+- Vite
+- Tailwind CSS
+- vite-plugin-pwa
+
+TAILWIND SETUP
+
+Tailwind CSS is installed through the Vite plugin.
+
+The Tailwind configuration is located in:
+frontend/react-app/vite.config.js
+
+The main stylesheet is:
+frontend/react-app/src/index.css
+
+PWA SETUP
+
+The PWA functionality is configured through vite-plugin-pwa in:
+
+frontend/react-app/vite.config.js
+
+The PWA is currently configured with:
+- App name: PillBug
+- Short name: PillBug
+- Display mode: standalone
+- Automatic updates
+
+PWA icons still need to be added once the PillBug logo is finalized.
