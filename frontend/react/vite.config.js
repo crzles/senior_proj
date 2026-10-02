@@ -19,4 +19,10 @@ export default defineConfig({
         background_color: '#ffffff',
       }
   })],
+  server: {
+    proxy: {
+      // anything starting with /api goes to FastAPI during development
+      '/api': 'http://localhost:8000',
+    },
+  },
 })

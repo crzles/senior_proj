@@ -1,10 +1,8 @@
 #connecting postgresql
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from app.config import Settings
+from sqlalchemy.orm import sessionmaker, declarative_base
+from app.config import settings
 
-settings = Settings()
 # #database setup, communicates with the postgresql database
 engine = create_engine(settings.DATABASE_URL)
 

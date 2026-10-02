@@ -1,11 +1,9 @@
+from pathlib import Path
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
-from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException
 from app.database import engine, Base
 from app.routers import auth
-#to request/load html vvvvv
-from fastapi import Request
-from fastapi.templating import Jinja2Templates
 
 
 #for db table to be created inside postgres
@@ -13,27 +11,26 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-#static directory
-app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
-
-#example - loads frontend html templates
-templates = Jinja2Templates(directory="templates")
 
 #an endpoint
-@app.get("/")
+@app.get("/api/hw")
 async def root():
     return {"message": "Hello, world!"}
 
-#example - endpoint
-@app.get("/login", response_class=HTMLResponse)
-async def login_page():
-    with open("frontend/login.html") as f:
-        return f.read()
-
-#example of laoding html request
-@app.get("/settings", response_class=HTMLResponse)
-async def settings_page(request:Request):
-    return templates.TemplateResponse(request=request, name="settings.html")
-
 #routers
 app.include_router(auth.router)
+
+ROOT_DIR = Path(__file__).resolve().parent.parent  # senior_proj/
+DIST_DIR = ROOT_DIR / "frontend" / "react" / "dist"
+
+if DIST_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=DIST_DIR / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def load_react(full_path: str):
+        if full_path.startswith("api/"): #prevents typos to load
+            raise HTTPException(status_code=404, detail="Not found")
+        file = (DIST_DIR / full_path).resolve()
+        if file.is_file() and DIST_DIR in file.parents:
+            return FileResponse(file)
+        return FileResponse(DIST_DIR / "index.html")

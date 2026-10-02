@@ -24,5 +24,10 @@ __pycache__/
 #IDE, Editor files
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
 *.swp
 *.swo
+
+*.db
+*.sqlite3
