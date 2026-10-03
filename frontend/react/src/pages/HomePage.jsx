@@ -1,4 +1,13 @@
 function HomePage() {
+    const today = new Date()
+
+    const formattedDate = today.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+    })
+
     return (
         <div className="min-h-screen bg-gray-50 p-4 flex flex-col">
 
@@ -15,7 +24,7 @@ function HomePage() {
                         </h1>
 
                         <p className="text-sm text-blue-600">
-                            📅 Day, num-date month year {/* actual date */}
+                            📅 {formattedDate}
                         </p>
                     </div>
 
@@ -85,15 +94,15 @@ function HomePage() {
                     All
                 </button>
                 
-                <button className="px-4 py-2 bg-white-600 text-gray rounded-lg text-sm font-medium">
+                <button className="px-4 py-2 bg-white text-gray rounded-lg text-sm font-medium">
                     Morning
                 </button>
 
-                <button className="px-4 py-2 bg-white-600 text-gray rounded-lg text-sm font-medium">
+                <button className="px-4 py-2 bg-white text-gray rounded-lg text-sm font-medium">
                     Afternoon
                 </button>
 
-                <button className="px-4 py-2 bg-white-600 text-gray rounded-lg text-sm font-medium">
+                <button className="px-4 py-2 bg-white text-gray rounded-lg text-sm font-medium">
                     Evening
                 </button>
             </div>
@@ -136,7 +145,7 @@ function HomePage() {
             </div>
 
             {/* Reminder Information */}
-            <div className="bg-blue-50 border border-blue-100 rounded xl p-4 mb-4">
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
 
                 <h3 className="font-semibold mb-1">
                     Medication reminders
