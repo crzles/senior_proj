@@ -189,6 +189,11 @@ function HomePage() {
                     </button>
 
                     <button className="flex flex-col items-center text-gray-500 text-xs">
+                        <span className="text-lg">💊</span>
+                        All Medications
+                    </button>
+
+                    <button className="flex flex-col items-center text-gray-500 text-xs">
                         <span className="text-lg">📍</span>
                         Map
                     </button>
