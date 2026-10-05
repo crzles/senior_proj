@@ -18,7 +18,7 @@ async def search_drugs(q: str, db: Session = Depends(get_db)):
     url = "https://api.fda.gov/drug/label.json"
 
     params = {
-        "search": f'openfda.brand_name:"{q}"',
+        "search": f'(openfda.brand_name:"{q}" OR openfda.generic_name:"{q}")',
         "limit": 10
     }
 
