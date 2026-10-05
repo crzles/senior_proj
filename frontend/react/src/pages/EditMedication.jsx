@@ -45,8 +45,6 @@ function EditMedication() {
     function handleSubmit(event) {
         event.preventDefault()
 
-        setMessage("")
-
         if (!medicationName.trim()) {
             setMessage("Please enter a medication name.")
             return
@@ -100,16 +98,16 @@ function EditMedication() {
         setMessage("Medication updated successfully!")
 
         setTimeout(() => {
-            window.location.href = "/"
+            window.location.href = "/MedPage"
         }, 1000)
     }
 
     function cancelEdit() {
-        window.location.href = "/"
+        window.location.href = "/MedPage"
     }
 
     const inputClass =
-        "w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        "w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 
     const labelClass =
         "block text-sm font-semibold text-gray-700 mb-2"
@@ -123,6 +121,7 @@ function EditMedication() {
             {/* Header */}
             <header className="px-4 pt-4 pb-2">
                 <div className="flex items-center justify-between">
+
                     <div>
                         <p className="text-sm text-gray-600">
                             PillBug
@@ -139,37 +138,26 @@ function EditMedication() {
 
                     <button
                         type="button"
-                        aria-label="Back to medications"
                         onClick={cancelEdit}
+                        aria-label="Back to medications"
                         className="w-10 h-10 bg-blue-600 text-white rounded-full font-semibold"
                     >
                         ←
                     </button>
+
                 </div>
             </header>
 
             <main className="max-w-2xl mx-auto p-4">
 
-                {/* Message */}
-                {message && (
-                    <div
-                        className={
-                            message.includes("successfully")
-                                ? "bg-green-50 border border-green-200 text-green-700 rounded-xl p-4 mb-4 text-sm font-semibold"
-                                : "bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-4 text-sm font-semibold"
-                        }
-                    >
-                        {message}
-                    </div>
-                )}
-
                 <form onSubmit={handleSubmit}>
 
-                    {/* 1. Basic Information */}
+                    {/* Basic Information */}
                     <section className={sectionClass}>
 
                         <div className="flex items-start gap-3 mb-5">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+
+                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                                 1
                             </div>
 
@@ -182,10 +170,11 @@ function EditMedication() {
                                     Update the medication or supplement details
                                 </p>
                             </div>
+
                         </div>
 
-                        {/* Medication Name */}
                         <div className="mb-4">
+
                             <label className={labelClass}>
                                 Medication Name
                             </label>
@@ -196,13 +185,13 @@ function EditMedication() {
                                 onChange={(event) =>
                                     setMedicationName(event.target.value)
                                 }
-                                placeholder="Medication name"
                                 className={inputClass}
                             />
+
                         </div>
 
-                        {/* Medication Type */}
                         <div className="mb-4">
+
                             <label className={labelClass}>
                                 Medication Type
                             </label>
@@ -222,10 +211,11 @@ function EditMedication() {
                                     Supplement
                                 </option>
                             </select>
+
                         </div>
 
-                        {/* Dosage */}
                         <div className="mb-4">
+
                             <label className={labelClass}>
                                 Dosage
                             </label>
@@ -236,13 +226,13 @@ function EditMedication() {
                                 onChange={(event) =>
                                     setDosage(event.target.value)
                                 }
-                                placeholder="Example: 200 mg"
                                 className={inputClass}
                             />
+
                         </div>
 
-                        {/* Pills Per Dose */}
                         <div>
+
                             <label className={labelClass}>
                                 Pills Per Dose
                             </label>
@@ -256,15 +246,17 @@ function EditMedication() {
                                 }
                                 className={inputClass}
                             />
+
                         </div>
 
                     </section>
 
-                    {/* 2. Schedule */}
+                    {/* Schedule */}
                     <section className={sectionClass}>
 
                         <div className="flex items-start gap-3 mb-5">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+
+                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                                 2
                             </div>
 
@@ -274,40 +266,38 @@ function EditMedication() {
                                 </h2>
 
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Update when and how often you take it
+                                    Update how often you take it
                                 </p>
                             </div>
+
                         </div>
 
-                        {/* Frequency */}
-                        <div className="mb-4">
-                            <label className={labelClass}>
-                                Frequency
-                            </label>
+                        <label className={labelClass}>
+                            Frequency
+                        </label>
 
-                            <select
-                                value={frequency}
-                                onChange={(event) =>
-                                    setFrequency(event.target.value)
-                                }
-                                className={inputClass}
-                            >
-                                {frequencyOptions.map((option) => (
-                                    <option
-                                        key={option}
-                                        value={option}
-                                    >
-                                        {option}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        <select
+                            value={frequency}
+                            onChange={(event) =>
+                                setFrequency(event.target.value)
+                            }
+                            className={inputClass}
+                        >
+                            {frequencyOptions.map((option) => (
+                                <option
+                                    key={option}
+                                    value={option}
+                                >
+                                    {option}
+                                </option>
+                            ))}
+                        </select>
 
-                        {/* Custom Hours */}
                         {frequency === "Every X hours" && (
-                            <div className="mb-4">
+                            <div className="mt-4">
+
                                 <label className={labelClass}>
-                                    Every How Many Hours?
+                                    Every how many hours?
                                 </label>
 
                                 <input
@@ -315,16 +305,42 @@ function EditMedication() {
                                     min="1"
                                     value={customHours}
                                     onChange={(event) =>
-                                        setCustomHours(event.target.value)
+                                        setCustomHours(
+                                            event.target.value
+                                        )
                                     }
                                     placeholder="Example: 6"
                                     className={inputClass}
                                 />
+
                             </div>
                         )}
 
-                        {/* Start Date */}
+                    </section>
+
+                    {/* Dates */}
+                    <section className={sectionClass}>
+
+                        <div className="flex items-start gap-3 mb-5">
+
+                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                3
+                            </div>
+
+                            <div>
+                                <h2 className="text-lg font-bold">
+                                    Dates
+                                </h2>
+
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Update when you take this medication
+                                </p>
+                            </div>
+
+                        </div>
+
                         <div className="mb-4">
+
                             <label className={labelClass}>
                                 Start Date
                             </label>
@@ -337,10 +353,11 @@ function EditMedication() {
                                 }
                                 className={inputClass}
                             />
+
                         </div>
 
-                        {/* End Date */}
                         <div>
+
                             <label className={labelClass}>
                                 End Date
                             </label>
@@ -358,56 +375,57 @@ function EditMedication() {
                             <p className="text-xs text-gray-500 mt-2">
                                 Leave blank if there is no end date.
                             </p>
+
                         </div>
 
                     </section>
 
-                    {/* 3. Refill */}
+                    {/* Refills */}
                     <section className={sectionClass}>
 
                         <div className="flex items-start gap-3 mb-5">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                3
+
+                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                4
                             </div>
 
                             <div>
                                 <h2 className="text-lg font-bold">
-                                    Refill
+                                    Refills
                                 </h2>
 
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Update your refill information
+                                    Update your medication supply
                                 </p>
                             </div>
+
                         </div>
 
-                        {/* Refillable */}
-                        <div className="mb-4">
-                            <label className={labelClass}>
-                                Is this medication refillable?
-                            </label>
+                        <label className={labelClass}>
+                            Refillable
+                        </label>
 
-                            <select
-                                value={refillable}
-                                onChange={(event) =>
-                                    setRefillable(event.target.value)
-                                }
-                                className={inputClass}
-                            >
-                                <option value="yes">
-                                    Yes
-                                </option>
+                        <select
+                            value={refillable}
+                            onChange={(event) =>
+                                setRefillable(event.target.value)
+                            }
+                            className={inputClass}
+                        >
+                            <option value="yes">
+                                Yes
+                            </option>
 
-                                <option value="no">
-                                    No
-                                </option>
-                            </select>
-                        </div>
+                            <option value="no">
+                                No
+                            </option>
+                        </select>
 
                         {refillable === "yes" && (
-                            <>
-                                {/* Pill Quantity */}
-                                <div className="mb-4">
+                            <div className="mt-4 space-y-4">
+
+                                <div>
+
                                     <label className={labelClass}>
                                         Current Pill Quantity
                                     </label>
@@ -423,43 +441,46 @@ function EditMedication() {
                                         }
                                         className={inputClass}
                                     />
+
                                 </div>
 
-                                {/* Refill Reminder */}
                                 <div>
+
                                     <label className={labelClass}>
                                         Refill Reminder
                                     </label>
 
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={refillReminder}
-                                            onChange={(event) =>
-                                                setRefillReminder(
-                                                    event.target.value
-                                                )
-                                            }
-                                            className={inputClass}
-                                        />
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={refillReminder}
+                                        onChange={(event) =>
+                                            setRefillReminder(
+                                                event.target.value
+                                            )
+                                        }
+                                        className={inputClass}
+                                    />
 
-                                        <span className="text-sm text-gray-500 whitespace-nowrap">
-                                            days before empty
-                                        </span>
-                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        Remind me when I have this many
+                                        pills left.
+                                    </p>
+
                                 </div>
-                            </>
+
+                            </div>
                         )}
 
                     </section>
 
-                    {/* 4. Additional Information */}
+                    {/* Additional Information */}
                     <section className={sectionClass}>
 
                         <div className="flex items-start gap-3 mb-5">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                4
+
+                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                5
                             </div>
 
                             <div>
@@ -468,13 +489,14 @@ function EditMedication() {
                                 </h2>
 
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Add instructions and other notes
+                                    Update any useful notes
                                 </p>
                             </div>
+
                         </div>
 
-                        {/* Instructions */}
                         <div className="mb-4">
+
                             <label className={labelClass}>
                                 Instructions
                             </label>
@@ -482,67 +504,76 @@ function EditMedication() {
                             <textarea
                                 value={instructions}
                                 onChange={(event) =>
-                                    setInstructions(event.target.value)
+                                    setInstructions(
+                                        event.target.value
+                                    )
                                 }
-                                placeholder="Example: Take with food"
                                 rows="3"
-                                className={inputClass}
+                                className={`${inputClass} resize-y`}
                             />
+
                         </div>
 
-                        {/* Avoid */}
                         <div className="mb-4">
+
                             <label className={labelClass}>
-                                What to Avoid
+                                Avoid
                             </label>
 
                             <textarea
                                 value={avoidNotes}
                                 onChange={(event) =>
-                                    setAvoidNotes(event.target.value)
+                                    setAvoidNotes(
+                                        event.target.value
+                                    )
                                 }
-                                placeholder="Example: Avoid taking more than directed"
                                 rows="3"
-                                className={inputClass}
+                                className={`${inputClass} resize-y`}
                             />
+
                         </div>
 
-                        {/* Storage */}
                         <div>
+
                             <label className={labelClass}>
-                                Storage Instructions
+                                Storage
                             </label>
 
                             <textarea
                                 value={storageNotes}
                                 onChange={(event) =>
-                                    setStorageNotes(event.target.value)
+                                    setStorageNotes(
+                                        event.target.value
+                                    )
                                 }
-                                placeholder="Example: Store at room temperature"
                                 rows="3"
-                                className={inputClass}
+                                className={`${inputClass} resize-y`}
                             />
+
                         </div>
 
                     </section>
 
-                    {/* Review */}
-                    <section className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
-                        <p className="text-sm font-semibold text-gray-700">
-                            Ready to update?
-                        </p>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                            Review your information before saving your
-                            medication changes.
-                        </p>
-                    </section>
+                    {/* Status Message */}
+                    {message && (
+                        <div
+                            className={`rounded-xl p-4 mb-4 text-sm font-semibold ${
+                                message.includes("successfully")
+                                    ? "bg-green-50 text-green-700 border border-green-200"
+                                    : "bg-red-50 text-red-700 border border-red-200"
+                            }`}
+                        >
+                            {message}
+                        </div>
+                    )}
 
                 </form>
+
             </main>
 
             {/* Bottom Action Bar */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 shadow-lg z-20">
+
                 <div className="max-w-2xl mx-auto flex gap-2">
 
                     <button
@@ -566,6 +597,7 @@ function EditMedication() {
                     </button>
 
                 </div>
+
             </div>
 
         </div>

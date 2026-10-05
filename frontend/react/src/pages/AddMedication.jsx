@@ -159,7 +159,9 @@ function AddMedication() {
             med_type: medicationType,
             dosage: dosage.trim(),
             pills_per_dose: Number(pillsPerDose),
+
             recurrence: frequency,
+
             reminder_times:
                 frequency === "As needed"
                     ? []
@@ -192,31 +194,39 @@ function AddMedication() {
                                           },
                                       ]
                                     : reminderTimes,
+
             start_date: startDate,
             end_date: noEndDate ? null : endDate,
+
             is_refillable: refillEnabled,
+
             pill_qty:
                 refillEnabled && pillQuantity
                     ? Number(pillQuantity)
                     : null,
+
             refill_reminder:
                 refillEnabled && refillReminder
                     ? Number(refillReminder)
                     : null,
+
             requirements: instructions.trim(),
             avoid_notes: avoidNotes.trim(),
             storage_notes: storageNotes.trim(),
         }
 
-        console.log("Medication to send to backend:", medicationData)
+        console.log(
+            "Medication to send to backend:",
+            medicationData
+        )
 
         alert(`${medicationName} has been added!`)
 
-        window.location.href = "/"
+        window.location.href = "/MedPage"
     }
 
     const inputClass =
-        "w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        "w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 
     const labelClass =
         "block text-sm font-semibold text-gray-700 mb-2"
@@ -225,11 +235,12 @@ function AddMedication() {
         "bg-white rounded-xl p-4 mb-4 shadow-sm"
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 flex flex-col pb-24">
+        <div className="min-h-screen bg-gray-50 pb-24">
 
             {/* Header */}
-            <div className="mb-4">
+            <header className="px-4 pt-4 pb-2">
                 <div className="flex items-center justify-between">
+
                     <div>
                         <p className="text-sm text-gray-600">
                             PillBug
@@ -246,21 +257,29 @@ function AddMedication() {
 
                     <button
                         type="button"
-                        onClick={() => (window.location.href = "/")}
+                        aria-label="Back to medications"
+                        onClick={() =>
+                            (window.location.href = "/MedPage")
+                        }
                         className="w-10 h-10 bg-blue-600 text-white rounded-full font-semibold"
                     >
                         ←
                     </button>
-                </div>
-            </div>
 
-            <main className="max-w-2xl mx-auto w-full">
+                </div>
+            </header>
+
+            {/* Main Form */}
+            <main className="max-w-2xl mx-auto p-4">
+
                 <form onSubmit={handleSubmit}>
 
                     {/* 1. Medication */}
                     <section className={sectionClass}>
+
                         <div className="flex items-start gap-3 mb-5">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+
+                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                                 1
                             </div>
 
@@ -273,79 +292,111 @@ function AddMedication() {
                                     Search for a medication or supplement
                                 </p>
                             </div>
+
                         </div>
 
-                        <div className="mb-4">
+                        {/* Medication Name */}
+                        <div className="relative">
+
                             <label className={labelClass}>
                                 Medication Name
                             </label>
 
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={medicationName}
-                                    onChange={(event) => {
-                                        setMedicationName(event.target.value)
-                                        setSearchOpen(true)
-                                    }}
-                                    onFocus={() => setSearchOpen(true)}
-                                    placeholder="Search medication or supplement"
-                                    className={inputClass}
-                                />
+                            <input
+                                type="text"
+                                value={medicationName}
+                                onChange={(event) => {
+                                    setMedicationName(event.target.value)
+                                    setSearchOpen(true)
+                                }}
+                                onFocus={() => setSearchOpen(true)}
+                                onBlur={() =>
+                                    setTimeout(
+                                        () => setSearchOpen(false),
+                                        150
+                                    )
+                                }
+                                placeholder="Search medication or supplement"
+                                className={inputClass}
+                            />
 
-                                {searchOpen &&
-                                    medicationName.trim() !== "" && (
-                                        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
-                                            {medicationSuggestions
-                                                .filter((item) =>
-                                                    item
-                                                        .toLowerCase()
-                                                        .includes(
-                                                            medicationName.toLowerCase()
-                                                        )
-                                                )
-                                                .map((item) => (
-                                                    <button
-                                                        key={item}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setMedicationName(item)
-                                                            setSearchOpen(false)
-                                                        }}
-                                                        className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50"
-                                                    >
-                                                        {item}
-                                                    </button>
-                                                ))}
-                                        </div>
-                                    )}
-                            </div>
+                            {/* Suggestions */}
+                            {searchOpen &&
+                                medicationName.trim() !== "" && (
+                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-10">
+
+                                        {medicationSuggestions
+                                            .filter((item) =>
+                                                item
+                                                    .toLowerCase()
+                                                    .includes(
+                                                        medicationName.toLowerCase()
+                                                    )
+                                            )
+                                            .map((item) => (
+                                                <button
+                                                    key={item}
+                                                    type="button"
+                                                    onMouseDown={() => {
+                                                        setMedicationName(item)
+                                                        setSearchOpen(false)
+                                                    }}
+                                                    className="w-full px-4 py-3 text-left text-sm text-gray-700 border-b border-gray-100 hover:bg-gray-50"
+                                                >
+                                                    {item}
+                                                </button>
+                                            ))}
+
+                                        <button
+                                            type="button"
+                                            onMouseDown={() =>
+                                                setSearchOpen(false)
+                                            }
+                                            className="w-full px-4 py-3 text-left text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100"
+                                        >
+                                            + Add my own
+                                        </button>
+
+                                    </div>
+                                )}
+
                         </div>
 
-                        <div className="mb-4">
+                        {/* Type */}
+                        <div className="mt-5">
+
                             <label className={labelClass}>
                                 Type
                             </label>
 
                             <div className="grid grid-cols-2 gap-2">
-                                {["Medication", "Supplement"].map((type) => (
-                                    <button
-                                        key={type}
-                                        type="button"
-                                        onClick={() => setMedicationType(type)}
-                                        className={
-                                            medicationType === type
-                                                ? "py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold"
-                                                : "py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium"
-                                        }
-                                    >
-                                        {type}
-                                    </button>
-                                ))}
+
+                                {["Medication", "Supplement"].map(
+                                    (type) => (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() =>
+                                                setMedicationType(type)
+                                            }
+                                            className={`py-3 rounded-xl text-sm font-semibold border ${
+                                                medicationType === type
+                                                    ? "bg-blue-600 text-white border-blue-600"
+                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            {type}
+                                        </button>
+                                    )
+                                )}
+
                             </div>
+
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        {/* Dosage and Pills */}
+                        <div className="grid grid-cols-2 gap-3 mt-5">
+
                             <div>
                                 <label className={labelClass}>
                                     Strength / Dosage
@@ -369,59 +420,29 @@ function AddMedication() {
 
                                 <input
                                     type="number"
-                                    min="1"
+                                    min="0.01"
+                                    step="0.01"
                                     value={pillsPerDose}
                                     onChange={(event) =>
-                                        setPillsPerDose(event.target.value)
+                                        setPillsPerDose(
+                                            event.target.value
+                                        )
                                     }
                                     className={inputClass}
                                 />
                             </div>
+
                         </div>
+
                     </section>
 
-                    {/* 2. Dose */}
+                    {/* 2. Schedule */}
                     <section className={sectionClass}>
+
                         <div className="flex items-start gap-3 mb-5">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+
+                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                                 2
-                            </div>
-
-                            <div>
-                                <h2 className="text-lg font-bold">
-                                    Dose
-                                </h2>
-
-                                <p className="text-sm text-gray-500 mt-1">
-                                    Set how much you take at one time
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                            <p className="text-sm text-gray-600">
-                                You will take
-                            </p>
-
-                            <p className="text-xl font-bold text-blue-600 mt-1">
-                                {pillsPerDose || 0}{" "}
-                                {Number(pillsPerDose) === 1
-                                    ? "pill"
-                                    : "pills"}
-                            </p>
-
-                            <p className="text-sm text-gray-500 mt-1">
-                                of {medicationName || "this medication"} per
-                                dose
-                            </p>
-                        </div>
-                    </section>
-
-                    {/* 3. Schedule */}
-                    <section className={sectionClass}>
-                        <div className="flex items-start gap-3 mb-5">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                3
                             </div>
 
                             <div>
@@ -430,68 +451,78 @@ function AddMedication() {
                                 </h2>
 
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Choose when you should take it
+                                    Choose when and how often you take it
                                 </p>
                             </div>
+
                         </div>
 
-                        <div className="mb-4">
-                            <label className={labelClass}>
-                                Frequency
-                            </label>
+                        <label className={labelClass}>
+                            Frequency
+                        </label>
 
-                            <select
-                                value={frequency}
-                                onChange={(event) =>
-                                    updateFrequency(event.target.value)
-                                }
-                                className={inputClass}
-                            >
-                                <option>Once daily</option>
-                                <option>Twice daily</option>
-                                <option>3 times daily</option>
-                                <option>4 times daily</option>
-                                <option>Every X hours</option>
-                                <option>Once weekly</option>
-                                <option>Every X days</option>
-                                <option>As needed</option>
-                                <option>Custom schedule</option>
-                            </select>
-                        </div>
+                        <select
+                            value={frequency}
+                            onChange={(event) =>
+                                updateFrequency(event.target.value)
+                            }
+                            className={inputClass}
+                        >
+                            <option>Once daily</option>
+                            <option>Twice daily</option>
+                            <option>3 times daily</option>
+                            <option>4 times daily</option>
+                            <option>Every X hours</option>
+                            <option>Once weekly</option>
+                            <option>Every X days</option>
+                            <option>As needed</option>
+                            <option>Custom schedule</option>
+                        </select>
 
+                        {/* Daily reminder times */}
                         {[
                             "Once daily",
                             "Twice daily",
                             "3 times daily",
                             "4 times daily",
                         ].includes(frequency) && (
-                            <div className="space-y-3">
+                            <div className="mt-5">
+
                                 <label className={labelClass}>
                                     Reminder Times
                                 </label>
 
-                                {reminderTimes.map((time, index) => (
-                                    <input
-                                        key={index}
-                                        type="time"
-                                        value={time}
-                                        onChange={(event) =>
-                                            updateReminderTime(
-                                                index,
-                                                event.target.value
-                                            )
-                                        }
-                                        className={inputClass}
-                                    />
-                                ))}
+                                <div className="space-y-2">
+
+                                    {reminderTimes.map(
+                                        (time, index) => (
+                                            <input
+                                                key={index}
+                                                type="time"
+                                                value={time}
+                                                onChange={(event) =>
+                                                    updateReminderTime(
+                                                        index,
+                                                        event.target.value
+                                                    )
+                                                }
+                                                className={inputClass}
+                                            />
+                                        )
+                                    )}
+
+                                </div>
+
                             </div>
                         )}
 
+                        {/* Every X Hours */}
                         {frequency === "Every X hours" && (
-                            <div className="space-y-4">
+                            <div className="mt-5 space-y-4">
+
                                 <div>
                                     <label className={labelClass}>
-                                        Every how many hours?
+                                        Repeat every how many hours?
                                     </label>
 
                                     <input
@@ -499,7 +530,9 @@ function AddMedication() {
                                         min="1"
                                         value={hoursInterval}
                                         onChange={(event) =>
-                                            setHoursInterval(event.target.value)
+                                            setHoursInterval(
+                                                event.target.value
+                                            )
                                         }
                                         className={inputClass}
                                     />
@@ -507,58 +540,28 @@ function AddMedication() {
 
                                 <div>
                                     <label className={labelClass}>
-                                        First Dose
+                                        First Dose Time
                                     </label>
 
                                     <input
                                         type="time"
                                         value={firstDoseTime}
                                         onChange={(event) =>
-                                            setFirstDoseTime(event.target.value)
+                                            setFirstDoseTime(
+                                                event.target.value
+                                            )
                                         }
                                         className={inputClass}
                                     />
                                 </div>
+
                             </div>
                         )}
 
-                        {frequency === "Every X days" && (
-                            <div className="space-y-4">
-                                <div>
-                                    <label className={labelClass}>
-                                        Every how many days?
-                                    </label>
-
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={daysInterval}
-                                        onChange={(event) =>
-                                            setDaysInterval(event.target.value)
-                                        }
-                                        className={inputClass}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className={labelClass}>
-                                        First Dose
-                                    </label>
-
-                                    <input
-                                        type="time"
-                                        value={firstDoseTime}
-                                        onChange={(event) =>
-                                            setFirstDoseTime(event.target.value)
-                                        }
-                                        className={inputClass}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
+                        {/* Once Weekly */}
                         {frequency === "Once weekly" && (
-                            <div className="space-y-4">
+                            <div className="mt-5 space-y-4">
+
                                 <div>
                                     <label className={labelClass}>
                                         Day
@@ -567,7 +570,9 @@ function AddMedication() {
                                     <select
                                         value={weeklyDay}
                                         onChange={(event) =>
-                                            setWeeklyDay(event.target.value)
+                                            setWeeklyDay(
+                                                event.target.value
+                                            )
                                         }
                                         className={inputClass}
                                     >
@@ -586,107 +591,175 @@ function AddMedication() {
 
                                     <input
                                         type="time"
-                                        value={reminderTimes[0] || "08:00"}
+                                        value={
+                                            reminderTimes[0] ||
+                                            "08:00"
+                                        }
                                         onChange={(event) =>
-                                            setReminderTimes([
-                                                event.target.value,
-                                            ])
+                                            updateReminderTime(
+                                                0,
+                                                event.target.value
+                                            )
                                         }
                                         className={inputClass}
                                     />
                                 </div>
+
                             </div>
                         )}
 
-                        {frequency === "Custom schedule" && (
-                            <div className="space-y-4">
+                        {/* Every X Days */}
+                        {frequency === "Every X days" && (
+                            <div className="mt-5 space-y-4">
+
                                 <div>
                                     <label className={labelClass}>
-                                        Days
+                                        Repeat every how many days?
                                     </label>
 
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {daysOfWeek.map((day) => (
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={daysInterval}
+                                        onChange={(event) =>
+                                            setDaysInterval(
+                                                event.target.value
+                                            )
+                                        }
+                                        className={inputClass}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className={labelClass}>
+                                        First Dose Time
+                                    </label>
+
+                                    <input
+                                        type="time"
+                                        value={firstDoseTime}
+                                        onChange={(event) =>
+                                            setFirstDoseTime(
+                                                event.target.value
+                                            )
+                                        }
+                                        className={inputClass}
+                                    />
+                                </div>
+
+                            </div>
+                        )}
+
+                        {/* As Needed */}
+                        {frequency === "As needed" && (
+                            <div className="mt-4 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                                This medication does not have a recurring
+                                reminder schedule. You can take it when
+                                needed.
+                            </div>
+                        )}
+
+                        {/* Custom Schedule */}
+                        {frequency === "Custom schedule" && (
+                            <div className="mt-5">
+
+                                <label className={labelClass}>
+                                    Select Days
+                                </label>
+
+                                <div className="flex flex-wrap gap-2 mb-5">
+
+                                    {daysOfWeek.map((day) => {
+                                        const selected =
+                                            customDays.includes(day)
+
+                                        return (
                                             <button
                                                 key={day}
                                                 type="button"
                                                 onClick={() =>
                                                     toggleCustomDay(day)
                                                 }
-                                                className={
-                                                    customDays.includes(day)
-                                                        ? "py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold"
-                                                        : "py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm"
-                                                }
+                                                className={`px-3 py-2 rounded-lg text-xs font-semibold border ${
+                                                    selected
+                                                        ? "bg-blue-600 text-white border-blue-600"
+                                                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                }`}
                                             >
-                                                {day}
+                                                {day.slice(0, 3)}
                                             </button>
-                                        ))}
-                                    </div>
+                                        )
+                                    })}
+
                                 </div>
 
-                                <div>
-                                    <label className={labelClass}>
-                                        Reminder Times
-                                    </label>
+                                <label className={labelClass}>
+                                    Reminder Times
+                                </label>
 
-                                    <div className="space-y-2">
-                                        {customTimes.map((time, index) => (
+                                <div className="space-y-2">
+
+                                    {customTimes.map(
+                                        (time, index) => (
                                             <div
                                                 key={index}
                                                 className="flex gap-2"
                                             >
+
                                                 <input
                                                     type="time"
                                                     value={time}
                                                     onChange={(event) =>
                                                         updateCustomTime(
                                                             index,
-                                                            event.target.value
+                                                            event.target
+                                                                .value
                                                         )
                                                     }
                                                     className={inputClass}
                                                 />
 
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        removeCustomTime(index)
-                                                    }
-                                                    className="px-4 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
-                                                >
-                                                    ×
-                                                </button>
+                                                {customTimes.length >
+                                                    1 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            removeCustomTime(
+                                                                index
+                                                            )
+                                                        }
+                                                        className="w-12 border border-gray-300 rounded-xl bg-white text-gray-500 text-xl hover:bg-gray-50"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                )}
+
                                             </div>
-                                        ))}
-                                    </div>
+                                        )
+                                    )}
 
-                                    <button
-                                        type="button"
-                                        onClick={addCustomTime}
-                                        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium"
-                                    >
-                                        + Add Time
-                                    </button>
                                 </div>
+
+                                <button
+                                    type="button"
+                                    onClick={addCustomTime}
+                                    className="mt-3 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                                >
+                                    + Add another time
+                                </button>
+
                             </div>
                         )}
 
-                        {frequency === "As needed" && (
-                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                                <p className="text-sm text-gray-600">
-                                    This medication does not have a fixed
-                                    reminder schedule.
-                                </p>
-                            </div>
-                        )}
                     </section>
 
-                    {/* 4. Dates */}
+                    {/* 3. Dates */}
                     <section className={sectionClass}>
+
                         <div className="flex items-start gap-3 mb-5">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                4
+
+                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                3
                             </div>
 
                             <div>
@@ -695,12 +768,14 @@ function AddMedication() {
                                 </h2>
 
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Choose when the medication starts and ends
+                                    Set when you will start and stop taking it
                                 </p>
                             </div>
+
                         </div>
 
                         <div className="mb-4">
+
                             <label className={labelClass}>
                                 Start Date
                             </label>
@@ -713,44 +788,49 @@ function AddMedication() {
                                 }
                                 className={inputClass}
                             />
+
                         </div>
 
-                        <div>
-                            <label className={labelClass}>
-                                End Date
-                            </label>
+                        <label className={labelClass}>
+                            End Date
+                        </label>
 
-                            <label className="flex items-center gap-2 text-sm text-gray-700 mb-3">
-                                <input
-                                    type="checkbox"
-                                    checked={noEndDate}
-                                    onChange={(event) =>
-                                        setNoEndDate(event.target.checked)
-                                    }
-                                    className="w-4 h-4 accent-blue-600"
-                                />
-                                No end date
-                            </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
 
-                            {!noEndDate && (
-                                <input
-                                    type="date"
-                                    value={endDate}
-                                    min={startDate}
-                                    onChange={(event) =>
-                                        setEndDate(event.target.value)
-                                    }
-                                    className={inputClass}
-                                />
-                            )}
-                        </div>
+                            <input
+                                type="checkbox"
+                                checked={noEndDate}
+                                onChange={(event) =>
+                                    setNoEndDate(event.target.checked)
+                                }
+                                className="w-4 h-4 accent-blue-600"
+                            />
+
+                            No end date
+
+                        </label>
+
+                        {!noEndDate && (
+                            <input
+                                type="date"
+                                value={endDate}
+                                min={startDate}
+                                onChange={(event) =>
+                                    setEndDate(event.target.value)
+                                }
+                                className={`${inputClass} mt-3`}
+                            />
+                        )}
+
                     </section>
 
-                    {/* 5. Refills */}
+                    {/* 4. Refills */}
                     <section className={sectionClass}>
+
                         <div className="flex items-start gap-3 mb-5">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                5
+
+                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                4
                             </div>
 
                             <div>
@@ -762,43 +842,31 @@ function AddMedication() {
                                     Keep track of your medication supply
                                 </p>
                             </div>
+
                         </div>
 
-                        <div className="flex items-center justify-between mb-4">
-                            <div>
-                                <p className="text-sm font-semibold text-gray-700">
-                                    Refill tracking
-                                </p>
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer">
 
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Get reminded when your supply is low
-                                </p>
-                            </div>
+                            <input
+                                type="checkbox"
+                                checked={refillEnabled}
+                                onChange={(event) =>
+                                    setRefillEnabled(
+                                        event.target.checked
+                                    )
+                                }
+                                className="w-4 h-4 accent-blue-600"
+                            />
 
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setRefillEnabled(!refillEnabled)
-                                }
-                                className={
-                                    refillEnabled
-                                        ? "w-12 h-7 bg-blue-600 rounded-full relative"
-                                        : "w-12 h-7 bg-gray-300 rounded-full relative"
-                                }
-                            >
-                                <span
-                                    className={
-                                        refillEnabled
-                                            ? "absolute right-1 top-1 w-5 h-5 bg-white rounded-full"
-                                            : "absolute left-1 top-1 w-5 h-5 bg-white rounded-full"
-                                    }
-                                />
-                            </button>
-                        </div>
+                            This medication is refillable
+
+                        </label>
 
                         {refillEnabled && (
-                            <div className="space-y-4">
+                            <div className="mt-5 space-y-4">
+
                                 <div>
+
                                     <label className={labelClass}>
                                         Current Pill Quantity
                                     </label>
@@ -808,45 +876,53 @@ function AddMedication() {
                                         min="0"
                                         value={pillQuantity}
                                         onChange={(event) =>
-                                            setPillQuantity(event.target.value)
+                                            setPillQuantity(
+                                                event.target.value
+                                            )
                                         }
-                                        placeholder="e.g. 30"
+                                        placeholder="Example: 30"
                                         className={inputClass}
                                     />
+
                                 </div>
 
                                 <div>
+
                                     <label className={labelClass}>
-                                        Remind Me When
+                                        Refill Reminder
                                     </label>
 
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={refillReminder}
-                                            onChange={(event) =>
-                                                setRefillReminder(
-                                                    event.target.value
-                                                )
-                                            }
-                                            className={inputClass}
-                                        />
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={refillReminder}
+                                        onChange={(event) =>
+                                            setRefillReminder(
+                                                event.target.value
+                                            )
+                                        }
+                                        className={inputClass}
+                                    />
 
-                                        <span className="text-sm text-gray-600 whitespace-nowrap">
-                                            pills remain
-                                        </span>
-                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        Remind me when I have this many
+                                        pills left.
+                                    </p>
+
                                 </div>
+
                             </div>
                         )}
+
                     </section>
 
-                    {/* 6. Additional Information */}
+                    {/* 5. Additional Information */}
                     <section className={sectionClass}>
+
                         <div className="flex items-start gap-3 mb-5">
-                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                6
+
+                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                5
                             </div>
 
                             <div>
@@ -855,64 +931,77 @@ function AddMedication() {
                                 </h2>
 
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Add any helpful instructions or notes
+                                    Add notes that may be useful later
                                 </p>
                             </div>
+
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className={labelClass}>
-                                    Instructions
-                                </label>
+                        <div className="mb-4">
 
-                                <textarea
-                                    value={instructions}
-                                    onChange={(event) =>
-                                        setInstructions(event.target.value)
-                                    }
-                                    placeholder="e.g. Take with food"
-                                    rows="3"
-                                    className={inputClass}
-                                />
-                            </div>
+                            <label className={labelClass}>
+                                Instructions
+                            </label>
 
-                            <div>
-                                <label className={labelClass}>
-                                    Avoid
-                                </label>
+                            <textarea
+                                value={instructions}
+                                onChange={(event) =>
+                                    setInstructions(
+                                        event.target.value
+                                    )
+                                }
+                                placeholder="Example: Take with food"
+                                rows="3"
+                                className={`${inputClass} resize-y`}
+                            />
 
-                                <textarea
-                                    value={avoidNotes}
-                                    onChange={(event) =>
-                                        setAvoidNotes(event.target.value)
-                                    }
-                                    placeholder="e.g. Avoid taking with grapefruit"
-                                    rows="3"
-                                    className={inputClass}
-                                />
-                            </div>
-
-                            <div>
-                                <label className={labelClass}>
-                                    Storage
-                                </label>
-
-                                <textarea
-                                    value={storageNotes}
-                                    onChange={(event) =>
-                                        setStorageNotes(event.target.value)
-                                    }
-                                    placeholder="e.g. Store at room temperature"
-                                    rows="3"
-                                    className={inputClass}
-                                />
-                            </div>
                         </div>
+
+                        <div className="mb-4">
+
+                            <label className={labelClass}>
+                                Avoid
+                            </label>
+
+                            <textarea
+                                value={avoidNotes}
+                                onChange={(event) =>
+                                    setAvoidNotes(
+                                        event.target.value
+                                    )
+                                }
+                                placeholder="Example: Avoid grapefruit"
+                                rows="3"
+                                className={`${inputClass} resize-y`}
+                            />
+
+                        </div>
+
+                        <div>
+
+                            <label className={labelClass}>
+                                Storage
+                            </label>
+
+                            <textarea
+                                value={storageNotes}
+                                onChange={(event) =>
+                                    setStorageNotes(
+                                        event.target.value
+                                    )
+                                }
+                                placeholder="Example: Store at room temperature"
+                                rows="3"
+                                className={`${inputClass} resize-y`}
+                            />
+
+                        </div>
+
                     </section>
 
                     {/* Review */}
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
+                    <section className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
+
                         <p className="text-sm font-semibold text-gray-700">
                             Medication ready to add?
                         </p>
@@ -921,26 +1010,23 @@ function AddMedication() {
                             Review your information before saving this
                             medication to your routine.
                         </p>
-                    </div>
 
-                    {/* Hidden submit button */}
-                    <button
-                        type="submit"
-                        className="hidden"
-                    >
-                        Add Medication
-                    </button>
+                    </section>
 
                 </form>
+
             </main>
 
-            {/* Bottom Navigation / Actions */}
+            {/* Bottom Action Bar */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 shadow-lg z-20">
+
                 <div className="max-w-2xl mx-auto flex gap-2">
 
                     <button
                         type="button"
-                        onClick={() => (window.location.href = "/")}
+                        onClick={() =>
+                            (window.location.href = "/MedPage")
+                        }
                         className="flex-1 py-3 border border-gray-300 bg-white text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50"
                     >
                         Cancel
@@ -948,17 +1034,18 @@ function AddMedication() {
 
                     <button
                         type="button"
-                        onClick={() =>
+                        onClick={() => {
                             document
                                 .querySelector("form")
                                 ?.requestSubmit()
-                        }
+                        }}
                         className="flex-[2] py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700"
                     >
-                        Add Medication
+                        + Add Medication
                     </button>
 
                 </div>
+
             </div>
 
         </div>
