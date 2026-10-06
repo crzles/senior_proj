@@ -43,7 +43,7 @@ function AuthPage() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden">
 
         {/* PillBug Header */}
-        <div className="flex items-center px-2 py-4">
+        <div className="flex items-center px-5 py-3">
           <div className="flex items-center gap-2">
             <img
               src={pillbugLogo}
@@ -58,7 +58,7 @@ function AuthPage() {
         </div>
 
         {/*Welcome Card */}
-        <div className={`${isSignUp ? "bg-blue-600 text-white" : "bg-white"} rounded-2xl shadow-sm p-6 mb-6`}>
+        <div className={`${isSignUp ? "bg-blue-600 text-white" : "bg-blue-50"} rounded-xl p-5 mb-5`}>
 
           {/* Welcome Icon */}
           <div className={`w-12 h-12 ${isSignUp ? "bg-white/20" : "bg-blue-100"} rounded-full flex items-center justify-center mb-4`}>
