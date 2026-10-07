@@ -387,7 +387,10 @@ function HomePage() {
                                                 <div className="text-xs mt-3">
                                                     {status === "Taken" && (
                                                         <span className={theme === "dark" ? "text-green-300" : "text-green-700"}>
-                                                            Taken today
+                                                            Taken today at {new Date(medication.taken_at).toLocaleTimeString("en-US", {
+                                                                hour: "numeric",
+                                                                minute: "2-digit"
+                                                            })}
                                                         </span>
                                                     )}
 
