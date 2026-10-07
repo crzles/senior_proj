@@ -1,8 +1,15 @@
+import {useState} from "react"
+import {useNavigate} from "react-router-dom"
 import {useDemo} from "../context/DemoContext"
 import {useTheme} from "../context/ThemeContext"
 
 function HomePage() {
-    const {demoUser, demoMedications} = useDemo()
+    const [medicationFilter, setMedicationFilter] = useState("All")
+    const [typeFilter, setTypeFilter] = useState("All")
+
+    const navigate = useNavigate()
+
+    const {demoUser, demoMedications, toggleMedicationTakenStatus} = useDemo()
 
     const {theme, currentTheme} = useTheme()
     const today = new Date()
@@ -16,6 +23,23 @@ function HomePage() {
             hour: "numeric",
             minute: "2-digit"
         })
+    }
+
+    function getTimeOfDay(time) {
+        const [hour] = time.split(":")
+        const hourNumber = Number(hour)
+
+        if (hourNumber >= 5 && hourNumber < 12) {
+            return "Morning"
+        } else if (hourNumber >= 12 && hourNumber < 17) {
+            return "Afternoon"
+        } else {
+            return "Evening"
+        }
+    }
+
+    function getTimeSections() {
+        return ["Morning", "Afternoon", "Evening"]
     }
 
     const medicationStatuses = demoMedications.map((medication) => {
@@ -179,19 +203,44 @@ function HomePage() {
             {/* Medication Filters */}
             <div className="flex gap-2 mb-4 overflow-x-auto">
 
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
+                <button
+                    onClick={() => setMedicationFilter("All")}
+                    className={`px-4 py-2 ${
+                        medicationFilter === "All"
+                            ? "bg-blue-600 text-white"
+                            : `${currentTheme.card} ${currentTheme.secondaryText}`
+                    } rounded-lg text-sm font-medium`}
+                >
                     All
                 </button>
                 
-                <button className={`px-4 py-2 ${currentTheme.card} ${currentTheme.secondaryText} rounded-lg text-sm font-medium`}>
+                <button 
+                    onClick={() => setMedicationFilter("Morning")}
+                    className={`px-4 py-2 ${
+                        medicationFilter === "Morning"
+                            ? "bg-blue-600 text-white"
+                            : `${currentTheme.card} ${currentTheme.secondaryText}`
+                    } rounded-lg text-sm font-medium`}>
                     Morning
                 </button>
 
-                <button className={`px-4 py-2 ${currentTheme.card} ${currentTheme.secondaryText} rounded-lg text-sm font-medium`}>
+                <button 
+                    onClick={() => setMedicationFilter("Afternoon")}
+                    className={`px-4 py-2 ${
+                        medicationFilter === "Afternoon"
+                            ? "bg-blue-600 text-white"
+                            : `${currentTheme.card} ${currentTheme.secondaryText}`
+                    } rounded-lg text-sm font-medium`}>
                     Afternoon
                 </button>
 
-                <button className={`px-4 py-2 ${currentTheme.card} ${currentTheme.secondaryText} rounded-lg text-sm font-medium`}>
+                <button 
+                    onClick={() => setMedicationFilter("Evening")}
+                    className={`px-4 py-2 ${
+                        medicationFilter === "Evening"
+                            ? "bg-blue-600 text-white"
+                            : `${currentTheme.card} ${currentTheme.secondaryText}`
+                    } rounded-lg text-sm font-medium`}>
                     Evening
                 </button>
             </div>
@@ -234,98 +283,135 @@ function HomePage() {
 
                 ) : (
                     <div>
-                        {demoMedications.map((medication, index) => {
-                           const status = medicationStatuses[index]
+                        {getTimeSections()
+                            .filter((section) => medicationFilter === "All" || medicationFilter === section)
+                            .map((section) => {
+                                const sectionMedications = demoMedications.filter((medication) => {
+                                    const matchesTime =
+                                        getTimeOfDay(medication.reminder_times[0]) === section
 
-                           return (
-                            <div
-                                key={medication.med_name}
-                                className={`rounded-xl p-4 mb-3 shadow-sm ${
-                                    status === "Taken"
-                                        ? theme === "dark"
-                                            ? "bg-green-900"
-                                            : "bg-green-100"
-                                        : status === "Pending"
-                                        ? theme === "dark"
-                                            ? "bg-orange-900"
-                                            : "bg-orange-100"
-                                        : theme === "dark"
-                                        ? "bg-red-950"
-                                        : "bg-red-100"
-                                }`}
-                            >
+                                    const matchesType =
+                                        typeFilter === "All" ||
+                                        medication.med_type === typeFilter
 
-                                {/* Medication Information*/}
-                                <div className="flex items-center gap-3">
+                                    return matchesTime && matchesType
+                            })
 
-                                    {/* Pill icon */}
-                                    <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
-                                        <span className="text-xl">
-                                            💊
-                                        </span>
-                                    </div>
+                            if (sectionMedications.length === 0) {
+                                return null
+                            }
 
-                                    {/* Medication details */}
-                                    <div className="flex-1">
-                                        <h3 className={`${currentTheme.text} font-bold`}>
-                                            {medication.med_name}
-                                        </h3>
+                            return (
+                                <div key={section} className="mb-6">
+                                    <h3 className={`text-lg font-bold mb-3 ${currentTheme.text}`}>
+                                        {section}
+                                    </h3>
 
-                                        <p className={`${currentTheme.secondaryText} text-sm`}>
-                                            {medication.dosage} · {medication.pills_per_dose} pill · Due {formatTime(medication.reminder_times[0])}
-                                        </p>
-                                    </div>
+                                    {sectionMedications.map((medication) => {
+                                        const status =
+                                            medicationStatuses[demoMedications.indexOf(medication)]
 
-                                    {/* Status */}
-                                    <div
-                                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                            status === "Taken"
-                                                ? "bg-green-500"
-                                                : status === "Pending"
-                                                ? "border-2 border-orange-500"
-                                                : "bg-red-500"
-                                        }`}
-                                    >
-                                        {status === "Taken" && (
-                                            <span className="text-white text-sm">
-                                                ✓
-                                            </span>
-                                        )}
+                                        return (
+                                            <div
+                                                key={medication.med_name}
+                                                className={`rounded-xl p-4 mb-3 shadow-sm ${
+                                                    status === "Taken"
+                                                        ? theme === "dark"
+                                                            ? "bg-green-900"
+                                                            : "bg-green-100"
+                                                        : status === "Pending"
+                                                        ? theme === "dark"
+                                                            ? "bg-orange-900"
+                                                            : "bg-orange-100"
+                                                        : status === "Missed"
+                                                        ? theme === "dark"
+                                                            ? "bg-red-950"
+                                                            : "bg-red-100"
+                                                        : ""
+                                                }`}
+                                            >
 
-                                        {status === "Pending" && (
-                                            <span className="text-orange-500 text-sm">
-                                                ◷
-                                            </span>
-                                        )}
+                                            {/* Medication Information*/}
+                                            <div className="flex items-center gap-3">
 
-                                        {status === "Missed" && (
-                                            <span className="text-white text-sm">
-                                                ✕
-                                            </span>
-                                        )}
-                                    </div>
+                                                {/* Pill Icon */}
+                                                <div className={`w-10 h-10 ${currentTheme.background} rounded-full flex items-center justify-center`}>
+                                                    <span className="text-xl">
+                                                        💊
+                                                    </span>
+                                                </div>
+
+                                                {/* Medication Details */}
+                                                <div className="flex-1">
+                                                    <h3 className={`${currentTheme.text} font-bold`}>
+                                                        {medication.med_name}
+                                                    </h3>
+
+                                                    <p className={`${currentTheme.secondaryText} text-sm`}>
+                                                        {medication.dosage} · {medication.pills_per_dose} pill
+                                                    </p>
+                                                </div>
+
+                                                {/*Status */}
+                                                 <button
+                                                        onClick={() => toggleMedicationTakenStatus(medication.med_name)}
+                                                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                                            status === "Taken"
+                                                                ? "bg-green-500"
+                                                                : status === "Pending"
+                                                                ? "border-2 border-orange-500"
+                                                                : "bg-red-500"
+                                                        }`}
+                                                    >
+                                                        {status === "Taken" && (
+                                                            <span className="text-white text-sm">
+                                                                ✓
+                                                            </span>
+                                                        )}
+
+                                                        {status === "Pending" && (
+                                                            <span className="text-orange-500 text-sm">
+                                                                ◷
+                                                            </span>
+                                                        )}
+
+                                                        {status === "Missed" && (
+                                                            <span className="text-white text-sm">
+                                                                ✕
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                </div>
+
+                                                {/* Status Information */}
+                                                <div className="text-xs mt-3">
+                                                    {status === "Taken" && (
+                                                        <span className={theme === "dark" ? "text-green-300" : "text-green-700"}>
+                                                            Taken today at {new Date(medication.taken_at).toLocaleTimeString("en-US", {
+                                                                hour: "numeric",
+                                                                minute: "2-digit"
+                                                            })}
+                                                        </span>
+                                                    )}
+
+                                                    {status === "Pending" && (
+                                                        <span className={theme === "dark" ? "text-orange-300" : "text-orange-500"}>
+                                                            Pending · Due {formatTime(medication.reminder_times[0])}
+                                                        </span>
+                                                    )}
+
+                                                    {status === "Missed" && (
+                                                        <span className={theme === "dark" ? "text-red-300" : "text-red-500"}>
+                                                            Missed · Was due {formatTime(medication.reminder_times[0])}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                            </div>
+                                        )
+                                    })}
                                 </div>
-
-                                {/*Status Information*/}
-                                <div className="text-xs mt-3">
-                                    {status === "Taken" && (
-                                        <span className={theme === "dark" ? "text-green-300" : "text-green-700"}>
-                                            Taken today
-                                        </span>
-                                    )}
-                                    {status === "Pending" && (
-                                        <span className={theme === "dark" ? "text-orange-300" : "text-orange-500"}>
-                                            Pending · Due {formatTime(medication.reminder_times[0])}
-                                        </span>
-                                    )}
-                                    {status === "Missed" && (
-                                        <span className={theme === "dark" ? "text-red-300" : "text-red-500"}>
-                                            Missed · Was due {formatTime(medication.reminder_times[0])}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                           )
+                            )                  
                         })}
                     </div>
                 )}
@@ -354,15 +440,34 @@ function HomePage() {
             {/* Medication Type Filter */}
             <div className={`fixed bottom-[68px] left-0 right-0 ${currentTheme.background} flex gap-2 px-4 py-2 z-10`}>
 
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
+                <button
+                    onClick={() => setTypeFilter("All")}
+                    className={`px-4 py-2 ${
+                        typeFilter === "All" 
+                            ? "bg-blue-600 text-white" 
+                            : `${currentTheme.card} ${currentTheme.secondaryText}`
+                    } rounded-lg text-sm font-medium`}
+                >
                     All
                 </button>
 
-                <button className={`px-4 py-2 ${currentTheme.card} ${currentTheme.secondaryText} rounded-lg text-sm font-medium`}>
+                <button
+                    onClick={() => setTypeFilter("Medication")}
+                    className={`px-4 py-2 ${
+                        typeFilter === "Medication" 
+                            ? "bg-blue-600 text-white" 
+                            : `${currentTheme.card} ${currentTheme.secondaryText}`
+                    } rounded-lg text-sm font-medium`}>
                     Medication
                 </button>
 
-                <button className={`px-4 py-2 ${currentTheme.card} ${currentTheme.secondaryText} rounded-lg text-sm font-medium`}>
+                <button
+                    onClick={() => setTypeFilter("Supplement")}
+                    className={`px-4 py-2 ${
+                        typeFilter === "Supplement" 
+                            ? "bg-blue-600 text-white" 
+                            : `${currentTheme.card} ${currentTheme.secondaryText}`
+                    } rounded-lg text-sm font-medium`}>
                     Supplement
                 </button>
             </div>
@@ -372,32 +477,44 @@ function HomePage() {
 
                 <div className="flex justify-around">
 
-                    <button className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
+                    <button
+                        onClick={() => navigate("/home")}
+                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">⌂</span>
                         Home
                     </button>
 
-                    <button className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
+                    <button
+                        onClick={() => navigate("/coming-soon")}
+                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">💊</span>
                         All Medications
                     </button>
 
-                    <button className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
+                    <button
+                        onClick={() => navigate("/coming-soon")}
+                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">📍</span>
                         Map
                     </button>
 
-                    <button className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
+                    <button
+                        onClick={() => navigate("/coming-soon")}
+                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">📝</span>
                         Symptoms
                     </button>
 
-                    <button className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
+                    <button
+                        onClick={() => navigate("/coming-soon")}
+                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">📅</span>
                         Calendar
                     </button>
 
-                    <button className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
+                    <button
+                        onClick={() => navigate("/coming-soon")}
+                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">👤</span>
                         Profile
                     </button>

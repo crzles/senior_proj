@@ -21,6 +21,7 @@ export function DemoProvider({children}) {
         recurrence: "Once daily",
         reminder_times: ["08:00"],
         taken: false,
+        taken_at: null,
         start_date: "2026-10-01",
         end_date: null,
         is_refillable: false,
@@ -30,9 +31,45 @@ export function DemoProvider({children}) {
         avoid_notes: "",
         storage_notes: "",
     },
+    {
+        med_name: "Vitamin D",
+        med_type: "Supplement",
+        dosage: "1000 IU",
+        pills_per_dose: 1,
+        recurrence: "Once daily",
+        reminder_times: ["23:59"],
+        taken: false,
+        taken_at: null,
+        start_date: "2026-10-01",
+        end_date: null,
+        is_refillable: false,
+        pill_qty: null,
+        refill_reminder: null,
+        requirements: "",
+        avoid_notes: "",
+        storage_notes: "",
+    }
 ]
 
-const demoMedications = demoMode ? demoMedicationData : []
+const [medications, setMedications] = useState(demoMedicationData)
+
+const demoMedications = demoMode ? medications : []
+
+function toggleMedicationTakenStatus(medicationName) {
+    setMedications((currentMedications) =>
+        currentMedications.map((medication) =>
+            medication.med_name === medicationName
+                ? {
+                    ...medication,
+                    taken: !medication.taken,
+                    taken_at: medication.taken
+                        ? null
+                        : new Date().toISOString(),
+                }
+                : medication
+        )
+    )
+}
 
     return (
         <DemoContext.Provider
@@ -41,6 +78,7 @@ const demoMedications = demoMode ? demoMedicationData : []
                 setDemoMode,
                 demoUser,
                 demoMedications,
+                toggleMedicationTakenStatus,
             }}
         >
             {children}
