@@ -1,6 +1,13 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { useDemo } from "../context/DemoContext"
+import { useTheme } from "../context/ThemeContext"
 
 function AddMedication() {
+    const navigate = useNavigate()
+    const {addMedication} = useDemo()
+    const {currentTheme} = useTheme()
+
     // Medication information
     const [medicationName, setMedicationName] = useState("")
     const [medicationType, setMedicationType] = useState("Medication")
@@ -160,40 +167,48 @@ function AddMedication() {
             dosage: dosage.trim(),
             pills_per_dose: Number(pillsPerDose),
 
+            taken: false,
+            taken_at: null,
+
             recurrence: frequency,
 
             reminder_times:
-                frequency === "As needed"
-                    ? []
-                    : frequency === "Every X hours"
-                        ? [
-                              {
-                                  interval_hours: Number(hoursInterval),
-                                  first_dose: firstDoseTime,
-                              },
-                          ]
-                        : frequency === "Every X days"
-                            ? [
-                                  {
-                                      interval_days: Number(daysInterval),
-                                      first_dose: firstDoseTime,
-                                  },
-                              ]
-                            : frequency === "Once weekly"
-                                ? [
-                                      {
-                                          day: weeklyDay,
-                                          time: reminderTimes[0],
-                                      },
-                                  ]
-                                : frequency === "Custom schedule"
-                                    ? [
-                                          {
-                                              days: customDays,
-                                              times: customTimes,
-                                          },
-                                      ]
-                                    : reminderTimes,
+                [
+                    "Once daily",
+                    "Twice daily",
+                    "3 times daily",
+                    "4 times daily",
+                ].includes(frequency)
+                    ? reminderTimes
+                    : frequency === "Once weekly"
+                        ? [reminderTimes[0]]
+                        : [],
+
+           schedule_type: frequency,
+            interval_hours:
+                frequency === "Every X hours" 
+                ? Number(hoursInterval) 
+                : null,
+            interval_days:
+                frequency === "Every X days" 
+                ? Number(daysInterval) 
+                : null,
+            first_dose_time:
+                frequency === "Every X hours" || frequency === "Every X days"
+                ? firstDoseTime
+                : null,
+            weekly_day:
+                frequency === "Once weekly" 
+                ? weeklyDay 
+                : null,
+            custom_days:
+                frequency === "Custom schedule" 
+                ? customDays 
+                : [],
+            custom_times:
+                frequency === "Custom schedule" 
+                ? customTimes
+                : [],
 
             start_date: startDate,
             end_date: noEndDate ? null : endDate,
@@ -215,42 +230,39 @@ function AddMedication() {
             storage_notes: storageNotes.trim(),
         }
 
-        console.log(
-            "Medication to send to backend:",
-            medicationData
-        )
+        addMedication(medicationData)
 
         alert(`${medicationName} has been added!`)
 
-        window.location.href = "/MedPage"
+        navigate("/MedPage")
     }
 
     const inputClass =
-        "w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        `w-full px-4 py-3 border ${currentTheme.border} rounded-xl ${currentTheme.card} ${currentTheme.text} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`
 
     const labelClass =
-        "block text-sm font-semibold text-gray-700 mb-2"
+        `block text-sm font-semibold ${currentTheme.text} mb-2`
 
     const sectionClass =
-        "bg-white rounded-xl p-4 mb-4 shadow-sm"
+         `${currentTheme.card} rounded-xl p-4 mb-4 shadow-sm`
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24">
+        <div className={`min-h-screen ${currentTheme.background} pb-24`}>
 
             {/* Header */}
             <header className="px-4 pt-4 pb-2">
                 <div className="flex items-center justify-between">
 
                     <div>
-                        <p className="text-sm text-gray-600">
+                        <p className={`${currentTheme.secondaryText} text-sm`}>
                             PillBug
                         </p>
 
-                        <h1 className="text-xl font-bold">
+                        <h1 className={`${currentTheme.text} text-xl font-bold`}>
                             Add Medication
                         </h1>
 
-                        <p className="text-sm text-blue-600">
+                        <p className={`${currentTheme.secondaryText} text-sm`}>
                             Add a medication or supplement to your routine
                         </p>
                     </div>
@@ -261,7 +273,7 @@ function AddMedication() {
                         onClick={() =>
                             (window.location.href = "/MedPage")
                         }
-                        className="w-10 h-10 bg-blue-600 text-white rounded-full font-semibold"
+                        className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
                     >
                         ←
                     </button>
@@ -279,16 +291,16 @@ function AddMedication() {
 
                         <div className="flex items-start gap-3 mb-5">
 
-                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <div className={`w-8 h-8 min-w-8 ${currentTheme.primary} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
                                 1
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold">
+                                <h2 className={`${currentTheme.text} text-lg font-bold`}>
                                     Medication
                                 </h2>
 
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className={`${currentTheme.secondaryText} text-sm mt-1`}>
                                     Search for a medication or supplement
                                 </p>
                             </div>
@@ -323,7 +335,7 @@ function AddMedication() {
                             {/* Suggestions */}
                             {searchOpen &&
                                 medicationName.trim() !== "" && (
-                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-10">
+                                    <div className={`absolute top-full left-0 right-0 mt-1 ${currentTheme.card} ${currentTheme.border} border rounded-xl shadow-lg overflow-hidden z-10`}>
 
                                         {medicationSuggestions
                                             .filter((item) =>
@@ -341,7 +353,7 @@ function AddMedication() {
                                                         setMedicationName(item)
                                                         setSearchOpen(false)
                                                     }}
-                                                    className="w-full px-4 py-3 text-left text-sm text-gray-700 border-b border-gray-100 hover:bg-gray-50"
+                                                    className={`w-full px-4 py-3 text-left text-sm ${currentTheme.text} border-b ${currentTheme.border} hover:opacity-80`}
                                                 >
                                                     {item}
                                                 </button>
@@ -352,7 +364,7 @@ function AddMedication() {
                                             onMouseDown={() =>
                                                 setSearchOpen(false)
                                             }
-                                            className="w-full px-4 py-3 text-left text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100"
+                                            className={`w-full px-4 py-3 text-left text-sm font-semibold ${currentTheme.text} ${currentTheme.card} hover:opacity-80`}
                                         >
                                             + Add my own
                                         </button>
@@ -381,8 +393,8 @@ function AddMedication() {
                                             }
                                             className={`py-3 rounded-xl text-sm font-semibold border ${
                                                 medicationType === type
-                                                    ? "bg-blue-600 text-white border-blue-600"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                    ? `${currentTheme.primary} text-white border-blue-600`
+                                                    : `${currentTheme.card} ${currentTheme.text} ${currentTheme.border} hover:opacity-80`
                                             }`}
                                         >
                                             {type}
@@ -441,16 +453,16 @@ function AddMedication() {
 
                         <div className="flex items-start gap-3 mb-5">
 
-                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <div className={`w-8 h-8 min-w-8 ${currentTheme.primary} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
                                 2
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold">
+                                <h2 className={`${currentTheme.text} text-lg font-bold`}>
                                     Schedule
                                 </h2>
 
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className={`${currentTheme.secondaryText} text-sm mt-1`}>
                                     Choose when and how often you take it
                                 </p>
                             </div>
@@ -652,7 +664,7 @@ function AddMedication() {
 
                         {/* As Needed */}
                         {frequency === "As needed" && (
-                            <div className="mt-4 p-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm">
+                            <div className={`mt-4 p-3 rounded-xl ${currentTheme.card} ${currentTheme.border} ${currentTheme.text} text-sm`}>
                                 This medication does not have a recurring
                                 reminder schedule. You can take it when
                                 needed.
@@ -682,8 +694,8 @@ function AddMedication() {
                                                 }
                                                 className={`px-3 py-2 rounded-lg text-xs font-semibold border ${
                                                     selected
-                                                        ? "bg-blue-600 text-white border-blue-600"
-                                                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                        ? `${currentTheme.primary} text-white border-blue-600`
+                                                        : `${currentTheme.card} ${currentTheme.text} ${currentTheme.border} hover:opacity-80`
                                                 }`}
                                             >
                                                 {day.slice(0, 3)}
@@ -728,7 +740,7 @@ function AddMedication() {
                                                                 index
                                                             )
                                                         }
-                                                        className="w-12 border border-gray-300 rounded-xl bg-white text-gray-500 text-xl hover:bg-gray-50"
+                                                        className={`w-12 border ${currentTheme.border} ${currentTheme.card} ${currentTheme.secondaryText} rounded-xl text-xl hover:opacity-80`}
                                                     >
                                                         ×
                                                     </button>
@@ -743,7 +755,7 @@ function AddMedication() {
                                 <button
                                     type="button"
                                     onClick={addCustomTime}
-                                    className="mt-3 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                                    className={`mt-3 text-sm font-semibold ${currentTheme.text} hover:opacity-80`}
                                 >
                                     + Add another time
                                 </button>
@@ -758,16 +770,16 @@ function AddMedication() {
 
                         <div className="flex items-start gap-3 mb-5">
 
-                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <div className={`w-8 h-8 min-w-8 ${currentTheme.primary} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
                                 3
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold">
+                                <h2 className={`${currentTheme.text} text-lg font-bold`}>
                                     Dates
                                 </h2>
 
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className={`${currentTheme.secondaryText} text-sm mt-1`}>
                                     Set when you will start and stop taking it
                                 </p>
                             </div>
@@ -795,7 +807,7 @@ function AddMedication() {
                             End Date
                         </label>
 
-                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <label className={`flex items-center gap-2 text-sm ${currentTheme.text} cursor-pointer`}>
 
                             <input
                                 type="checkbox"
@@ -829,23 +841,23 @@ function AddMedication() {
 
                         <div className="flex items-start gap-3 mb-5">
 
-                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <div className={`w-8 h-8 min-w-8 ${currentTheme.primary} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
                                 4
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold">
+                                <h2 className={`${currentTheme.text} text-lg font-bold`}>
                                     Refills
                                 </h2>
 
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className={`${currentTheme.secondaryText} text-sm mt-1`}>
                                     Keep track of your medication supply
                                 </p>
                             </div>
 
                         </div>
 
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer">
+                        <label className={`flex items-center gap-2 text-sm font-semibold ${currentTheme.text} cursor-pointer`}>
 
                             <input
                                 type="checkbox"
@@ -904,7 +916,7 @@ function AddMedication() {
                                         className={inputClass}
                                     />
 
-                                    <p className="text-xs text-gray-500 mt-2">
+                                    <p className={`${currentTheme.secondaryText} text-xs mt-2`}>
                                         Remind me when I have this many
                                         pills left.
                                     </p>
@@ -921,16 +933,16 @@ function AddMedication() {
 
                         <div className="flex items-start gap-3 mb-5">
 
-                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <div className={`w-8 h-8 min-w-8 ${currentTheme.primary} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
                                 5
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold">
+                                <h2 className={`${currentTheme.text} text-lg font-bold`}>
                                     Additional Information
                                 </h2>
 
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className={`${currentTheme.secondaryText} text-sm mt-1`}>
                                     Add notes that may be useful later
                                 </p>
                             </div>
@@ -1000,13 +1012,13 @@ function AddMedication() {
                     </section>
 
                     {/* Review */}
-                    <section className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
+                    <section className={`${currentTheme.card} ${currentTheme.border} rounded-xl p-4 mb-4`}>
 
-                        <p className="text-sm font-semibold text-gray-700">
+                        <p className={`${currentTheme.text} text-sm font-semibold`}>
                             Medication ready to add?
                         </p>
 
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className={`${currentTheme.secondaryText} text-sm mt-1`}>
                             Review your information before saving this
                             medication to your routine.
                         </p>
@@ -1018,7 +1030,7 @@ function AddMedication() {
             </main>
 
             {/* Bottom Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 shadow-lg z-20">
+            <div className={`fixed bottom-0 left-0 right-0 ${currentTheme.card} border-t ${currentTheme.border} px-4 py-2 shadow-lg z-20`}>
 
                 <div className="max-w-2xl mx-auto flex gap-2">
 
@@ -1027,7 +1039,7 @@ function AddMedication() {
                         onClick={() =>
                             (window.location.href = "/MedPage")
                         }
-                        className="flex-1 py-3 border border-gray-300 bg-white text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50"
+                        className={`flex-1 py-3 border ${currentTheme.border} ${currentTheme.card} ${currentTheme.text} rounded-xl text-sm font-semibold hover:opacity-80`}
                     >
                         Cancel
                     </button>
@@ -1039,7 +1051,7 @@ function AddMedication() {
                                 .querySelector("form")
                                 ?.requestSubmit()
                         }}
-                        className="flex-[2] py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700"
+                        className={`flex-[2] py-3 ${currentTheme.primary} text-white rounded-xl text-sm font-bold hover:opacity-90`}
                     >
                         + Add Medication
                     </button>

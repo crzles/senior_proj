@@ -1,7 +1,7 @@
-import {useState} from "react"
-import {useNavigate} from "react-router-dom"
-import {useDemo} from "../context/DemoContext"
-import {useTheme} from "../context/ThemeContext"
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { useDemo } from "../context/DemoContext"
+import { useTheme } from "../context/ThemeContext"
 
 function HomePage() {
     const [medicationFilter, setMedicationFilter] = useState("All")
@@ -43,6 +43,7 @@ function HomePage() {
     }
 
     const medicationStatuses = demoMedications.map((medication) => {
+        // TODO: Update this to match the reminder_times format used in AddMedication.jsx when advanced scheduling is implemented.
         const reminderTime = medication.reminder_times[0]
         const [hour, minute] = reminderTime.split(":")
 
@@ -96,13 +97,13 @@ function HomePage() {
                             Today's Medications
                         </h1>
 
-                        <p className="text-sm text-blue-600">
+                        <p className={`text-sm ${currentTheme.secondaryText}`}>
                             📅 {formattedDate}
                         </p>
                     </div>
 
                     {/* Profile Button */}
-                    <button className="w-10 h-10 bg-blue-600 text-white rounded-full font-semibold">
+                    <button className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}>
                         {demoUser
                         ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
                         : "?"}
@@ -112,7 +113,7 @@ function HomePage() {
 
             {/* Next Dose Card */}
             {nextMedication && (
-                <div className="bg-blue-600 text-white rounded-xl p-4 mb-4">
+                <div className={`${currentTheme.primary} text-white rounded-xl p-4 mb-4`}>
                     <div className="flex items-center gap-3">
 
                         {/* Clock Icon */}
@@ -148,7 +149,7 @@ function HomePage() {
 
             {/* Fresh Start Card */}
             {demoMedications.length === 0 && (
-                <div className="bg-blue-600 text-white rounded-xl p-4 mb-4">
+                <div className={`${currentTheme.primary} text-white rounded-xl p-4 mb-4`}>
 
                     <p className="text-sm opacity-80">
                         A fresh start
@@ -207,7 +208,7 @@ function HomePage() {
                     onClick={() => setMedicationFilter("All")}
                     className={`px-4 py-2 ${
                         medicationFilter === "All"
-                            ? "bg-blue-600 text-white"
+                            ? `${currentTheme.primary} text-white`
                             : `${currentTheme.card} ${currentTheme.secondaryText}`
                     } rounded-lg text-sm font-medium`}
                 >
@@ -218,7 +219,7 @@ function HomePage() {
                     onClick={() => setMedicationFilter("Morning")}
                     className={`px-4 py-2 ${
                         medicationFilter === "Morning"
-                            ? "bg-blue-600 text-white"
+                            ? `${currentTheme.primary} text-white`
                             : `${currentTheme.card} ${currentTheme.secondaryText}`
                     } rounded-lg text-sm font-medium`}>
                     Morning
@@ -228,7 +229,7 @@ function HomePage() {
                     onClick={() => setMedicationFilter("Afternoon")}
                     className={`px-4 py-2 ${
                         medicationFilter === "Afternoon"
-                            ? "bg-blue-600 text-white"
+                            ? `${currentTheme.primary} text-white`
                             : `${currentTheme.card} ${currentTheme.secondaryText}`
                     } rounded-lg text-sm font-medium`}>
                     Afternoon
@@ -238,7 +239,7 @@ function HomePage() {
                     onClick={() => setMedicationFilter("Evening")}
                     className={`px-4 py-2 ${
                         medicationFilter === "Evening"
-                            ? "bg-blue-600 text-white"
+                            ? `${currentTheme.primary} text-white`
                             : `${currentTheme.card} ${currentTheme.secondaryText}`
                     } rounded-lg text-sm font-medium`}>
                     Evening
@@ -433,7 +434,9 @@ function HomePage() {
             )}
 
             {/* Add Medication Button */}
-            <button className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700">
+            <button
+                onClick={() => navigate("/add-medication")} 
+                className={`w-full py-3 ${currentTheme.primary} text-white font-semibold rounded-xl hover:opacity-90`}>
                 + Add Medication 
             </button>
 
@@ -444,7 +447,7 @@ function HomePage() {
                     onClick={() => setTypeFilter("All")}
                     className={`px-4 py-2 ${
                         typeFilter === "All" 
-                            ? "bg-blue-600 text-white" 
+                            ? `${currentTheme.primary} text-white` 
                             : `${currentTheme.card} ${currentTheme.secondaryText}`
                     } rounded-lg text-sm font-medium`}
                 >
@@ -455,7 +458,7 @@ function HomePage() {
                     onClick={() => setTypeFilter("Medication")}
                     className={`px-4 py-2 ${
                         typeFilter === "Medication" 
-                            ? "bg-blue-600 text-white" 
+                            ? `${currentTheme.primary} text-white` 
                             : `${currentTheme.card} ${currentTheme.secondaryText}`
                     } rounded-lg text-sm font-medium`}>
                     Medication
@@ -465,7 +468,7 @@ function HomePage() {
                     onClick={() => setTypeFilter("Supplement")}
                     className={`px-4 py-2 ${
                         typeFilter === "Supplement" 
-                            ? "bg-blue-600 text-white" 
+                            ? `${currentTheme.primary} text-white` 
                             : `${currentTheme.card} ${currentTheme.secondaryText}`
                     } rounded-lg text-sm font-medium`}>
                     Supplement
@@ -485,7 +488,7 @@ function HomePage() {
                     </button>
 
                     <button
-                        onClick={() => navigate("/coming-soon")}
+                        onClick={() => navigate("/MedPage")}
                         className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">💊</span>
                         All Medications
