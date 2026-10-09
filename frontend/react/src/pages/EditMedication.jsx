@@ -1,7 +1,21 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useSearchParams, useNavigate } from "react-router-dom"
+import { useDemo } from "../context/DemoContext"
+import { useTheme } from "../context/ThemeContext"
 
 function EditMedication() {
-    const [medicationName, setMedicationName] = useState("Ibuprofen")
+    const [searchParams] = useSearchParams()
+    const medicationId = searchParams.get("id")
+
+    const {demoMedications} = useDemo()
+    const {currentTheme} = useTheme()
+    const navigate = useNavigate()
+
+    const medication = demoMedications.find(
+        (med) => String(med.id) === medicationId
+    )
+
+    const [medicationName, setMedicationName] = useState("")
     const [medicationType, setMedicationType] = useState("Medication")
     const [dosage, setDosage] = useState("200 mg")
     const [pillsPerDose, setPillsPerDose] = useState("1")
@@ -29,6 +43,44 @@ function EditMedication() {
     )
 
     const [message, setMessage] = useState("")
+
+    useEffect(() => {
+        if (!medication) {
+            return
+        }
+
+        setMedicationName(medication.med_name || "")
+        setMedicationType(medication.med_type || "Medication")
+        setDosage(medication.dosage || "")
+        setPillsPerDose(String(medication.pills_per_dose || 1))
+
+        setFrequency(medication.recurrence || "Once daily")
+
+        setStartDate(medication.start_date || "")
+        setEndDate(medication.end_date || "")
+
+        setRefillable(
+            medication.is_refillable
+                ? "yes"
+                : "no"
+        )
+
+        setPillQuantity(
+            medication.pill_qty
+                ? String(medication.pill_qty)
+                : ""
+        )
+
+        setRefillReminder(
+            medication.refill_reminder
+                ? String(medication.refill_reminder)
+                : ""
+        )
+
+        setInstructions(medication.requirements || "")
+        setAvoidNotes(medication.avoid_notes || "")
+        setStorageNotes(medication.storage_notes || "")
+    }, [medication])
 
     const frequencyOptions = [
         "Once daily",
@@ -98,40 +150,40 @@ function EditMedication() {
         setMessage("Medication updated successfully!")
 
         setTimeout(() => {
-            window.location.href = "/MedPage"
+            navigate("/MedPage")
         }, 1000)
     }
 
     function cancelEdit() {
-        window.location.href = "/MedPage"
+        navigate("/MedPage")
     }
 
     const inputClass =
-        "w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        `w-full px-4 py-3 border ${currentTheme.border} rounded-xl ${currentTheme.card} ${currentTheme.text} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`
 
     const labelClass =
-        "block text-sm font-semibold text-gray-700 mb-2"
+        `block text-sm font-semibold ${currentTheme.text} mb-2`
 
     const sectionClass =
-        "bg-white rounded-xl p-4 mb-4 shadow-sm"
+        `${currentTheme.card} rounded-xl p-4 mb-4 shadow-sm`
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24">
+        <div className={`min-h-screen ${currentTheme.background} pb-24`}>
 
             {/* Header */}
             <header className="px-4 pt-4 pb-2">
                 <div className="flex items-center justify-between">
 
                     <div>
-                        <p className="text-sm text-gray-600">
+                        <p className={`text-sm ${currentTheme.secondaryText}`}>
                             PillBug
                         </p>
 
-                        <h1 className="text-xl font-bold">
+                        <h1 className={`text-xl font-bold ${currentTheme.text}`}>
                             Edit Medication
                         </h1>
 
-                        <p className="text-sm text-blue-600">
+                        <p className={`text-sm ${currentTheme.secondaryText}`}>
                             Update your medication information
                         </p>
                     </div>
@@ -140,7 +192,7 @@ function EditMedication() {
                         type="button"
                         onClick={cancelEdit}
                         aria-label="Back to medications"
-                        className="w-10 h-10 bg-blue-600 text-white rounded-full font-semibold"
+                        className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
                     >
                         ←
                     </button>
@@ -157,16 +209,16 @@ function EditMedication() {
 
                         <div className="flex items-start gap-3 mb-5">
 
-                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <div className={`w-8 h-8 min-w-8 ${currentTheme.primary} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
                                 1
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold">
+                                <h2 className={`text-lg font-bold ${currentTheme.text}`}>
                                     Basic Information
                                 </h2>
 
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className={`text-sm ${currentTheme.secondaryText} mt-1`}>
                                     Update the medication or supplement details
                                 </p>
                             </div>
@@ -256,16 +308,16 @@ function EditMedication() {
 
                         <div className="flex items-start gap-3 mb-5">
 
-                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <div className={`w-8 h-8 min-w-8 ${currentTheme.primary} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
                                 2
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold">
+                                <h2 className={`text-lg font-bold ${currentTheme.text}`}>
                                     Schedule
                                 </h2>
 
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className={`text-sm ${currentTheme.secondaryText} mt-1`}>
                                     Update how often you take it
                                 </p>
                             </div>
@@ -323,16 +375,16 @@ function EditMedication() {
 
                         <div className="flex items-start gap-3 mb-5">
 
-                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <div className={`w-8 h-8 min-w-8 ${currentTheme.primary} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
                                 3
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold">
+                                <h2 className={`text-lg font-bold ${currentTheme.text}`}>
                                     Dates
                                 </h2>
 
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className={`text-sm ${currentTheme.secondaryText} mt-1`}>
                                     Update when you take this medication
                                 </p>
                             </div>
@@ -372,7 +424,7 @@ function EditMedication() {
                                 className={inputClass}
                             />
 
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className={`${currentTheme.secondaryText} text-xs mt-2`}>
                                 Leave blank if there is no end date.
                             </p>
 
@@ -385,16 +437,16 @@ function EditMedication() {
 
                         <div className="flex items-start gap-3 mb-5">
 
-                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <div className={`w-8 h-8 min-w-8 ${currentTheme.primary} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
                                 4
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold">
+                                <h2 className={`text-lg font-bold ${currentTheme.text}`}>
                                     Refills
                                 </h2>
 
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className={`text-sm ${currentTheme.secondaryText} mt-1`}>
                                     Update your medication supply
                                 </p>
                             </div>
@@ -462,7 +514,7 @@ function EditMedication() {
                                         className={inputClass}
                                     />
 
-                                    <p className="text-xs text-gray-500 mt-2">
+                                    <p className={`${currentTheme.secondaryText} text-xs mt-2`}>
                                         Remind me when I have this many
                                         pills left.
                                     </p>
@@ -479,16 +531,16 @@ function EditMedication() {
 
                         <div className="flex items-start gap-3 mb-5">
 
-                            <div className="w-8 h-8 min-w-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                            <div className={`w-8 h-8 min-w-8 ${currentTheme.primary} text-white rounded-full flex items-center justify-center text-sm font-bold`}>
                                 5
                             </div>
 
                             <div>
-                                <h2 className="text-lg font-bold">
+                                <h2 className={`text-lg font-bold ${currentTheme.text}`}>
                                     Additional Information
                                 </h2>
 
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className={`text-sm ${currentTheme.secondaryText} mt-1`}>
                                     Update any useful notes
                                 </p>
                             </div>
@@ -572,14 +624,14 @@ function EditMedication() {
             </main>
 
             {/* Bottom Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 shadow-lg z-20">
+            <div className={`fixed bottom-0 left-0 right-0 ${currentTheme.card} border-t ${currentTheme.border} px-4 py-2 shadow-lg z-20`}>
 
                 <div className="max-w-2xl mx-auto flex gap-2">
 
                     <button
                         type="button"
                         onClick={cancelEdit}
-                        className="flex-1 py-3 border border-gray-300 bg-white text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50"
+                        className={`flex-1 py-3 border ${currentTheme.border} ${currentTheme.card} ${currentTheme.text} rounded-xl text-sm font-semibold hover:opacity-80`}
                     >
                         Cancel
                     </button>
@@ -591,7 +643,7 @@ function EditMedication() {
                                 .querySelector("form")
                                 ?.requestSubmit()
                         }
-                        className="flex-[2] py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700"
+                        className={`flex-[2] py-3 ${currentTheme.primary} text-white rounded-xl text-sm font-bold hover:opacity-90`}
                     >
                         Save Changes
                     </button>

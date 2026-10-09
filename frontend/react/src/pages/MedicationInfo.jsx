@@ -1,4 +1,17 @@
+import { useSearchParams, useNavigate } from "react-router-dom"
+import { useDemo } from "../context/DemoContext"
+
 function MedicationInfo() {
+  const [searchParams] = useSearchParams()
+  const medicationId = searchParams.get("id")
+
+  const {demoMedications} = useDemo()
+  const navigate = useNavigate()
+
+  const medication = demoMedications.find(
+    (med) => String(med.id) === medicationId
+  )
+
   return (
     <div
       style={{
@@ -27,14 +40,18 @@ function MedicationInfo() {
           padding: "25px",
         }}
       >
-        <h2 style={{ textAlign: "center" }}>Ibuprofen</h2>
+        <h2 style={{ textAlign: "center" }}>
+          {medication?.med_name}
+        </h2>
 
         <p>Next Reminder: 2:00 PM</p>
-        <p>Type: Medication</p>
-        <p>Dosage: 200 mg</p>
-        <p>Re-occurrence: Every 6 hours</p>
+        <p>Type: {medication?.med_type}</p>
+        <p>Dosage: {medication?.dosage}</p>
+        <p>Re-occurrence: {medication?.recurrence}</p>
         <p>Treatment Duration: 7 days</p>
-        <p>Refillable: Yes</p>
+        <p>
+          Refillable: {medication?.is_refillable ? "Yes" : "No"}
+        </p>
 
         <h3>Symptoms / Tags</h3>
         <p>Pain relief</p>
@@ -51,14 +68,14 @@ function MedicationInfo() {
         <div style={{ marginTop: "25px" }}>
           <button
             onClick={() =>
-              (window.location.href = "/edit-medication")
+              navigate(`/edit-medication?id=${medication.id}`)
             }
           >
             Edit Medication
           </button>
 
           <button
-            onClick={() => (window.location.href = "/")}
+            onClick={() => navigate("/MedPage")}
             style={{ marginLeft: "10px" }}
           >
             My Medications
