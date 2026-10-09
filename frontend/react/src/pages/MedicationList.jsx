@@ -10,15 +10,15 @@ function MedicationList() {
     const medications = demoMedications
 
     function goToAddMedication() {
-        window.location.href = "/add-medication"
+        navigate("/add-medication")
     }
 
     function goToEditMedication(id) {
-        window.location.href = `/edit-medication?id=${id}`
+        navigate(`/edit-medication?id=${id}`)
     }
 
     function goToMedicationInfo(id) {
-        window.location.href = `/medication-info?id=${id}`
+        navigate(`/medication-info?id=${id}`)
     }
 
     function getNextDose(medication) {
@@ -253,7 +253,7 @@ function MedicationList() {
                         onClick={() => navigate("/MedPage")}
                         className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">💊</span>
-                        All Medications
+                        My Medications
                     </button>
 
                     <button
