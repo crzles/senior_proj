@@ -1,7 +1,7 @@
 #url routers example - not complete
 from datetime import datetime, timedelta, timezone
 import jwt
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
@@ -36,22 +36,43 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def create_token(data: dict): #storing data in token {"sub": "testuser"}, meaning "who this token belongs to"
+    to_encode = data.copy()
     exp_time = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES) #expiration time of 30min from now
-    data.update({"exp": exp_time}) # when decoding token it checks it and rejects if expired
-    return jwt.encode(data, settings.SECRET_KEY, algorithm=ALGORITHM)
+    to_encode.update({"exp": exp_time}) # when decoding token it checks it and rejects if expired
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+
+#STATUS CODES: https://fastapi.tiangolo.com/reference/status/
+
+def get_curr_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials.")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload("sub")
+        if email is None:
+            raise credentials_exception
+    except InvalidTokenError:
+        raise credentials_exception
+
+    curr_user = db.query(App_User).filter(App_User.email == email).first()
+    if curr_user is None:
+        raise credentials_exception
+    return curr_user
+        
 
 #example - not complete; inputs new user in db/generates data in db
-@router.post("/signup", response_model=UserResponse)
+@router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(App_User).filter(App_User.email == user.email).first() #search for email in db
     if existing_user: #if email exist
-        raise HTTPException(status_code=400, detail="Email already registered.") #returns http 400 error
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered.") #returns http 400 error
 
-    new_user = App_User( 
+    new_user = App_User(
         first_name=user.first_name,
         last_name=user.last_name,
         email=user.email,
-        password_hash=pwd_context.hash(user.password) #will hash user.password
+        password_hash=pwd_context.hash(user.password), #will hash user.password
+        dob=user.dob,
+        terms=user.terms_accepted
     )
     db.add(new_user) #adds new user to app_user db
     db.commit()
