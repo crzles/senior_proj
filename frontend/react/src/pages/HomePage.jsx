@@ -491,7 +491,7 @@ function HomePage() {
                         onClick={() => navigate("/MedPage")}
                         className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">💊</span>
-                        All Medications
+                        My Medications
                     </button>
 
                     <button
