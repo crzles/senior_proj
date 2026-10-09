@@ -22,6 +22,7 @@ from app.schemas.user import UserCreate, UserResponse, Token
 #HTTPException: https://fastapi.tiangolo.com/reference/exceptions/?h=httpex
 #Depends: https://fastapi.tiangolo.com/reference/dependencies/?h=depends
 #JWT: https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/?h=jwt.exceptions#about-jwt
+#SECURITY: https://fastapi.tiangolo.com/tutorial/security/
 
 router = APIRouter(
     prefix="/api/auth",
@@ -44,7 +45,7 @@ def create_token(data: dict): #storing data in token {"sub": "testuser"}, meanin
 #STATUS CODES: https://fastapi.tiangolo.com/reference/status/
 
 def get_curr_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials.")
+    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials.", headers={"WWW-Authenticate": "Bearer"},)
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload("sub")
@@ -59,7 +60,6 @@ def get_curr_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get
     return curr_user
         
 
-#example - not complete; inputs new user in db/generates data in db
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(App_User).filter(App_User.email == user.email).first() #search for email in db
@@ -78,3 +78,18 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
+
+
+@router.post("/login", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db:Session = Depends(get_db)):
+    existing_user = db.query(App_User).filter(App_User.email == form_data.username).first()
+
+    if not existing_user or not pwd_context.verify(form_data.password, existing_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password.", headers={"WWW-Authenticate": "Bearer"},)
+    access_token = create_token(data={"sub": existing_user.email})
+    return Token(access_token=access_token, token_type="bearer")
+
+
+@router.get("/me", response_model=UserResponse)
+def read_curr_user(curr_user: App_User = Depends(get_curr_user)):
+    return curr_user
