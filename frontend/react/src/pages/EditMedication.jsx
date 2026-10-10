@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useSearchParams, useNavigate } from "react-router-dom"
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
 
@@ -10,6 +10,7 @@ function EditMedication() {
     const {demoMedications} = useDemo()
     const {currentTheme} = useTheme()
     const navigate = useNavigate()
+    const location = useLocation()
 
     const medication = demoMedications.find(
         (med) => String(med.id) === medicationId
@@ -154,8 +155,14 @@ function EditMedication() {
         }, 1000)
     }
 
+    // Go back to wherever the user came from. If this page was opened
+    // directly (no previous page in the app), fall back to the medication list.
     function cancelEdit() {
-        navigate("/MedPage")
+        if (location.key !== "default") {
+            navigate(-1)
+        } else {
+            navigate("/MedPage")
+        }
     }
 
     const inputClass =
@@ -191,7 +198,7 @@ function EditMedication() {
                     <button
                         type="button"
                         onClick={cancelEdit}
-                        aria-label="Back to medications"
+                        aria-label="Back"
                         className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
                     >
                         ←

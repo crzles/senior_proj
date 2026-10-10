@@ -1,10 +1,11 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
 
 function AddMedication() {
     const navigate = useNavigate()
+    const location = useLocation()
     const {addMedication} = useDemo()
     const {currentTheme} = useTheme()
 
@@ -167,9 +168,6 @@ function AddMedication() {
             dosage: dosage.trim(),
             pills_per_dose: Number(pillsPerDose),
 
-            taken: false,
-            taken_at: null,
-
             recurrence: frequency,
 
             reminder_times:
@@ -237,6 +235,16 @@ function AddMedication() {
         navigate("/MedPage")
     }
 
+    // Go back to wherever the user came from. If this page was opened
+    // directly (no previous page in the app), fall back to the medication list.
+    function cancelAdd() {
+        if (location.key !== "default") {
+            navigate(-1)
+        } else {
+            navigate("/MedPage")
+        }
+    }
+
     const inputClass =
         `w-full px-4 py-3 border ${currentTheme.border} rounded-xl ${currentTheme.card} ${currentTheme.text} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`
 
@@ -270,9 +278,7 @@ function AddMedication() {
                     <button
                         type="button"
                         aria-label="Back to medications"
-                        onClick={() =>
-                            (window.location.href = "/MedPage")
-                        }
+                        onClick={cancelAdd}
                         className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
                     >
                         ←
@@ -1036,9 +1042,7 @@ function AddMedication() {
 
                     <button
                         type="button"
-                        onClick={() =>
-                            (window.location.href = "/MedPage")
-                        }
+                        onClick={cancelAdd}
                         className={`flex-1 py-3 border ${currentTheme.border} ${currentTheme.card} ${currentTheme.text} rounded-xl text-sm font-semibold hover:opacity-80`}
                     >
                         Cancel

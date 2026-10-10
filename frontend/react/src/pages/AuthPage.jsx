@@ -59,9 +59,9 @@ function AuthPage() {
                             className="w-12 h-12 object-contain"
                     />
 
-                        <h1 className={`text-xl font-bold ${currentTheme.text}`}>
+                        {/* <h1 className={`text-xl font-bold ${currentTheme.text}`}>
                             PillBug
-                        </h1>
+                        </h1> */}
                     </div>
                 </div>
 

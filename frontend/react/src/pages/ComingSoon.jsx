@@ -28,9 +28,9 @@ function ComingSoon() {
                                 />
                             </div>
 
-                            <h1 className={`${currentTheme.text} text-xl font-bold`}>
+                            {/* <h1 className={`${currentTheme.text} text-xl font-bold`}>
                                 PillBug
-                            </h1>
+                            </h1> */}
                     </div>
 
                         {/* Profile Button */}
