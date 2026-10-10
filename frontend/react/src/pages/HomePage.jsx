@@ -6,10 +6,11 @@ import { useTheme } from "../context/ThemeContext"
 function HomePage() {
     const [medicationFilter, setMedicationFilter] = useState("All")
     const [typeFilter, setTypeFilter] = useState("All")
+    const [showProfileMenu, setShowProfileMenu] = useState(false)
 
     const navigate = useNavigate()
 
-    const {demoUser, demoMedications, toggleMedicationTakenStatus} = useDemo()
+    const {demoUser, demoMedications, doseLogs, getDoseKey, toggleDoseTaken} = useDemo()
 
     const {theme, currentTheme} = useTheme()
     const today = new Date()
@@ -42,38 +43,96 @@ function HomePage() {
         return ["Morning", "Afternoon", "Evening"]
     }
 
-    const medicationStatuses = demoMedications.map((medication) => {
-        // TODO: Update this to match the reminder_times format used in AddMedication.jsx when advanced scheduling is implemented.
-        const reminderTime = medication.reminder_times[0]
-        const [hour, minute] = reminderTime.split(":")
+    // A dose is "Due" from its scheduled time until the grace period ends.
+    const DUE_WINDOW_MINUTES = 60
 
-        const scheduledTime = new Date()
-        scheduledTime.setHours(Number(hour), Number(minute), 0, 0)
-
-        if (medication.taken) {
+    function getDoseStatus(doseKey, scheduledTime, medication) {
+        if (doseLogs[doseKey]) {
             return "Taken"
-        } else if (today < scheduledTime) {
-            return "Pending"
+        }
+
+        // Do not mark a dose as missed if the medication
+        // was added after that dose's scheduled time.
+        const addedAt = medication.added_at
+            ? new Date(medication.added_at)
+            : null
+
+        if (addedAt && scheduledTime < addedAt) {
+            return "Upcoming"
+        }
+
+        const dueUntil = new Date(
+            scheduledTime.getTime() + DUE_WINDOW_MINUTES * 60 * 1000
+        )
+
+        if (today < scheduledTime) {
+            return "Upcoming"
+        } else if (today < dueUntil) {
+            return "Due"
         } else {
             return "Missed"
         }
-    })
+    }
 
-    const takenCount = medicationStatuses.filter(
-        (status) => status === "Taken"
+    // TODO: Update this to match the reminder_times format used in AddMedication.jsx when advanced scheduling is implemented.
+    const doses = demoMedications
+        .flatMap((medication) =>
+            (medication.reminder_times || []).map((time) => {
+                const [hour, minute] = time.split(":")
+
+                const scheduledTime = new Date()
+                scheduledTime.setHours(Number(hour), Number(minute), 0, 0)
+
+                const key = getDoseKey(medication.id, time)
+
+                return {
+                    key,
+                    medication,
+                    time,
+                    scheduledTime,
+                    takenAt: doseLogs[key] || null,
+                    status: getDoseStatus(key, scheduledTime, medication),
+                }
+            })
+        )
+        .sort((a, b) => a.scheduledTime - b.scheduledTime)
+
+    const takenCount = doses.filter(
+        (dose) => dose.status === "Taken"
     ).length
 
-    const pendingCount = medicationStatuses.filter(
-        (status) => status === "Pending"
+    const pendingCount = doses.filter(
+        (dose) => dose.status === "Upcoming" || dose.status === "Due"
     ).length
 
-    const missedCount = medicationStatuses.filter(
-        (status) => status === "Missed"
+    const missedCount = doses.filter(
+        (dose) => dose.status === "Missed"
     ).length
 
-    const nextMedication = demoMedications.find(
-        (medication, index) => medicationStatuses[index] === "Pending"
+    // Doses added after their scheduled time are marked "Upcoming" even though
+    // that time has already passed, so skip those when picking the next dose.
+    const nextDose = doses.find(
+        (dose) =>
+            dose.status === "Due" ||
+            (dose.status === "Upcoming" && dose.scheduledTime > today)
     )
+
+    const tomorrowNextDose = demoMedications
+        .filter((medication) => medication.recurrence !== "As needed")
+        .flatMap((medication) => {
+            const times =
+                medication.reminder_times?.length > 0
+                    ? medication.reminder_times
+                    : medication.first_dose_time
+                        ? [medication.first_dose_time]
+                        : []
+
+            return times.map((time) => ({
+                medication,
+                time,
+            }))
+        })
+        .sort((a, b) => a.time.localeCompare(b.time))[0]
 
     const formattedDate = today.toLocaleDateString("en-US", {
         weekday: "long",
@@ -103,17 +162,69 @@ function HomePage() {
                     </div>
 
                     {/* Profile Button */}
-                    <button className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}>
-                        {demoUser
-                        ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
-                        : "?"}
-                    </button>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowProfileMenu((open) => !open)}
+                            aria-label="Open profile menu"
+                            aria-expanded={showProfileMenu}
+                            className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
+                        >
+                            {demoUser
+                                ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
+                                : "?"}
+                        </button>
+
+                        {/* Profile Pop-up Menu (opens when the initials button above is clicked) */}
+                        {showProfileMenu && (
+                            <div className={`absolute right-0 top-12 z-30 w-56 ${currentTheme.card} ${currentTheme.border} border rounded-xl p-3 shadow-lg`}>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full flex items-center justify-center font-semibold`}>
+                                        {demoUser
+                                            ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
+                                            : "?"}
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <p className={`${currentTheme.text} font-semibold truncate`}>
+                                            {demoUser
+                                                ? `${demoUser.firstName} ${demoUser.lastName}`
+                                                : "Guest"}
+                                        </p>
+                                        <p className={`${currentTheme.secondaryText} text-xs`}>
+                                            Version 1.0.0
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        setShowProfileMenu(false)
+                                        navigate("/")
+                                    }}
+                                    className="w-full text-left text-red-500 hover:bg-red-50 rounded-lg px-3 py-2 text-sm font-medium"
+                                >
+                                    Sign out
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Next Dose Card */}
-            {nextMedication && (
-                <div className={`${currentTheme.primary} text-white rounded-xl p-4 mb-4`}>
+            {(nextDose || doses.length > 0) && (
+                <div
+                    className={`${currentTheme.primary} text-white rounded-xl p-4 mb-4 ${nextDose ? "cursor-pointer" : ""}`}
+                    onClick={nextDose ? () => navigate(`/medication-info?id=${nextDose.medication.id}`) : undefined}
+                    role={nextDose ? "button" : undefined}
+                    tabIndex={nextDose ? 0 : undefined}
+                    onKeyDown={nextDose ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            navigate(`/medication-info?id=${nextDose.medication.id}`)
+                        }
+                    } : undefined}
+                >
                     <div className="flex items-center gap-3">
 
                         {/* Clock Icon */}
@@ -125,17 +236,53 @@ function HomePage() {
 
                         {/* Next Dose Information */}
                         <div className="flex-1">
-                            <p className="text-xs opacity-80">
-                                Next dose
-                            </p>
+                            {nextDose ? (
+                                <>
+                                    <p className="text-xs opacity-80">
+                                        Next dose
+                                    </p>
 
-                            <h2 className="text-lg font-bold">
-                                {nextMedication.med_name} · {formatTime(nextMedication.reminder_times[0])}
-                            </h2>
+                                    <h2 className="text-lg font-bold">
+                                        {nextDose.medication.med_name} · {formatTime(nextDose.time)}
+                                    </h2>
 
-                            <p className="text-sm opacity-80">
-                                {nextMedication.dosage} · {nextMedication.pills_per_dose} pill
-                            </p>
+                                    <p className="text-sm opacity-80">
+                                        {nextDose.medication.dosage} · {nextDose.medication.pills_per_dose} pill
+                                    </p>
+                                </>
+                            ) : tomorrowNextDose ? (
+                                <>
+                                    <p className="text-xs opacity-80">
+                                        {takenCount === doses.length
+                                            ? "All done for today!"
+                                            : "Nothing left to take today"}
+                                    </p>
+
+                                    <h2 className="text-lg font-bold">
+                                        No doses left for today!
+                                    </h2>
+
+                                    <p className="text-sm opacity-80">
+                                        Tomorrow's next dose → {tomorrowNextDose.medication.med_name} · {formatTime(tomorrowNextDose.time)}
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-xs opacity-80">
+                                        {takenCount === doses.length
+                                            ? "All done for today!"
+                                            : "Nothing left to take today"}
+                                    </p>
+
+                                    <h2 className="text-lg font-bold">
+                                        No doses left for today!
+                                    </h2>
+
+                                    <p className="text-sm opacity-80">
+                                        Check your medication list for your next scheduled dose.
+                                    </p>
+                                </>
+                            )}
                         </div>
 
                         {/* Arrow */}
@@ -200,6 +347,13 @@ function HomePage() {
                 </div>
 
             </div>
+
+            {/* Dose Progress */}
+            {doses.length > 0 && (
+                <p className={`${currentTheme.secondaryText} text-sm mb-4`}>
+                    {takenCount} of {doses.length} {doses.length === 1 ? "dose" : "doses"} taken today
+                </p>
+            )}
 
             {/* Medication Filters */}
             <div className="flex gap-2 mb-4 overflow-x-auto">
@@ -287,133 +441,172 @@ function HomePage() {
                         {getTimeSections()
                             .filter((section) => medicationFilter === "All" || medicationFilter === section)
                             .map((section) => {
-                                const sectionMedications = demoMedications.filter((medication) => {
+                                const sectionDoses = doses.filter((dose) => {
                                     const matchesTime =
-                                        getTimeOfDay(medication.reminder_times[0]) === section
+                                        getTimeOfDay(dose.time) === section
 
                                     const matchesType =
                                         typeFilter === "All" ||
-                                        medication.med_type === typeFilter
+                                        dose.medication.med_type === typeFilter
 
                                     return matchesTime && matchesType
-                            })
+                                })
 
-                            if (sectionMedications.length === 0) {
-                                return null
-                            }
+                                if (sectionDoses.length === 0) {
+                                    return null
+                                }
 
-                            return (
-                                <div key={section} className="mb-6">
-                                    <h3 className={`text-lg font-bold mb-3 ${currentTheme.text}`}>
-                                        {section}
-                                    </h3>
+                                return (
+                                    <div key={section} className="mb-6">
+                                        <h3 className={`text-lg font-bold mb-3 ${currentTheme.text}`}>
+                                            {section}
+                                        </h3>
 
-                                    {sectionMedications.map((medication) => {
-                                        const status =
-                                            medicationStatuses[demoMedications.indexOf(medication)]
+                                        {sectionDoses.map((dose) => {
+                                            const {medication, status} = dose
 
-                                        return (
-                                            <div
-                                                key={medication.med_name}
-                                                className={`rounded-xl p-4 mb-3 shadow-sm ${
-                                                    status === "Taken"
-                                                        ? theme === "dark"
-                                                            ? "bg-green-900"
-                                                            : "bg-green-100"
-                                                        : status === "Pending"
-                                                        ? theme === "dark"
-                                                            ? "bg-orange-900"
-                                                            : "bg-orange-100"
-                                                        : status === "Missed"
-                                                        ? theme === "dark"
-                                                            ? "bg-red-950"
-                                                            : "bg-red-100"
-                                                        : ""
-                                                }`}
-                                            >
+                                            return (
+                                                <div
+                                                    key={dose.key}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => navigate(`/medication-info?id=${dose.medication.id}`)}
+                                                    onKeyDown={(event) => {
+                                                        if (event.target !== event.currentTarget) {
+                                                            return
+                                                        }
 
-                                            {/* Medication Information*/}
-                                            <div className="flex items-center gap-3">
+                                                        if (event.key === "Enter" || event.key === " ") {
+                                                            event.preventDefault()
+                                                            navigate(`/medication-info?id=${dose.medication.id}`)
+                                                        }
+                                                    }}
+                                                    className={`rounded-xl p-4 mb-3 shadow-sm cursor-pointer ${
+                                                        status === "Taken"
+                                                            ? theme === "dark"
+                                                                ? "bg-green-900"
+                                                                : "bg-green-100"
+                                                            : status === "Due"
+                                                            ? theme === "dark"
+                                                                ? "bg-yellow-900"
+                                                                : "bg-yellow-100"
+                                                            : status === "Upcoming"
+                                                            ? theme === "dark"
+                                                                ? "bg-orange-900"
+                                                                : "bg-orange-100"
+                                                            : theme === "dark"
+                                                                ? "bg-red-950"
+                                                                : "bg-red-100"
+                                                    }`}
+                                                >
 
-                                                {/* Pill Icon */}
-                                                <div className={`w-10 h-10 ${currentTheme.background} rounded-full flex items-center justify-center`}>
-                                                    <span className="text-xl">
-                                                        💊
-                                                    </span>
-                                                </div>
+                                                    {/* Medication Information*/}
+                                                    <div className="flex items-center gap-3">
 
-                                                {/* Medication Details */}
-                                                <div className="flex-1">
-                                                    <h3 className={`${currentTheme.text} font-bold`}>
-                                                        {medication.med_name}
-                                                    </h3>
+                                                        {/* Pill Icon */}
+                                                        <div className={`w-10 h-10 ${currentTheme.background} rounded-full flex items-center justify-center`}>
+                                                            <span className="text-xl">
+                                                                💊
+                                                            </span>
+                                                        </div>
 
-                                                    <p className={`${currentTheme.secondaryText} text-sm`}>
-                                                        {medication.dosage} · {medication.pills_per_dose} pill
-                                                    </p>
-                                                </div>
+                                                        {/* Medication Details */}
+                                                        <div className="flex-1">
+                                                            <h3 className={`${currentTheme.text} font-bold`}>
+                                                                {medication.med_name}
+                                                            </h3>
 
-                                                {/*Status */}
-                                                 <button
-                                                        onClick={() => toggleMedicationTakenStatus(medication.med_name)}
-                                                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                                            status === "Taken"
-                                                                ? "bg-green-500"
-                                                                : status === "Pending"
-                                                                ? "border-2 border-orange-500"
-                                                                : "bg-red-500"
-                                                        }`}
-                                                    >
+                                                            <p className={`${currentTheme.secondaryText} text-sm`}>
+                                                                {medication.dosage} · {medication.pills_per_dose} pill
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Status */}
+                                                        <button
+                                                            onClick={(event) => {
+                                                                event.stopPropagation()
+                                                                toggleDoseTaken(dose.key)
+                                                            }}
+                                                            className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                                                status === "Taken"
+                                                                    ? "bg-green-500"
+                                                                    : status === "Due"
+                                                                    ? "border-2 border-yellow-500"
+                                                                    : status === "Upcoming"
+                                                                    ? "border-2 border-orange-500"
+                                                                    : "bg-red-500"
+                                                            }`}
+                                                        >
+                                                            {status === "Taken" && (
+                                                                <span className="text-white text-sm">
+                                                                    ✓
+                                                                </span>
+                                                            )}
+
+                                                            {status === "Due" && (
+                                                                <span className="text-yellow-600 text-sm">
+                                                                    ◷
+                                                                </span>
+                                                            )}
+
+                                                            {status === "Upcoming" && (
+                                                                <span className="text-orange-500 text-sm">
+                                                                    ◷
+                                                                </span>
+                                                            )}
+
+                                                            {status === "Missed" && (
+                                                                <span className="text-white text-sm">
+                                                                    ✕
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Status Information */}
+                                                    <div className="text-xs mt-3">
                                                         {status === "Taken" && (
-                                                            <span className="text-white text-sm">
-                                                                ✓
+                                                            <span className={theme === "dark" ? "text-green-300" : "text-green-700"}>
+                                                                Taken at {new Date(dose.takenAt).toLocaleTimeString("en-US", {
+                                                                    hour: "numeric",
+                                                                    minute: "2-digit"
+                                                                })} · Scheduled {formatTime(dose.time)}
                                                             </span>
                                                         )}
 
-                                                        {status === "Pending" && (
-                                                            <span className="text-orange-500 text-sm">
-                                                                ◷
+                                                        {status === "Due" && (
+                                                            <span className={theme === "dark" ? "text-yellow-300" : "text-yellow-700"}>
+                                                                Due now · Scheduled {formatTime(dose.time)}
+                                                            </span>
+                                                        )}
+
+                                                        {status === "Upcoming" && (
+                                                            <span className={theme === "dark" ? "text-orange-300" : "text-orange-500"}>
+                                                                Upcoming · Due {formatTime(dose.time)}
                                                             </span>
                                                         )}
 
                                                         {status === "Missed" && (
-                                                            <span className="text-white text-sm">
-                                                                ✕
+                                                            <span className={theme === "dark" ? "text-red-300" : "text-red-500"}>
+                                                                Missed · Was due {formatTime(dose.time)}
                                                             </span>
                                                         )}
-                                                    </button>
+                                                    </div>
+
                                                 </div>
+                                            )
+                                        })}
+                                    </div>
+                                )
+                            })}
 
-                                                {/* Status Information */}
-                                                <div className="text-xs mt-3">
-                                                    {status === "Taken" && (
-                                                        <span className={theme === "dark" ? "text-green-300" : "text-green-700"}>
-                                                            Taken today at {new Date(medication.taken_at).toLocaleTimeString("en-US", {
-                                                                hour: "numeric",
-                                                                minute: "2-digit"
-                                                            })}
-                                                        </span>
-                                                    )}
-
-                                                    {status === "Pending" && (
-                                                        <span className={theme === "dark" ? "text-orange-300" : "text-orange-500"}>
-                                                            Pending · Due {formatTime(medication.reminder_times[0])}
-                                                        </span>
-                                                    )}
-
-                                                    {status === "Missed" && (
-                                                        <span className={theme === "dark" ? "text-red-300" : "text-red-500"}>
-                                                            Missed · Was due {formatTime(medication.reminder_times[0])}
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )                  
-                        })}
+                        {doses.length === 0 && (
+                            <div className={`${currentTheme.card} rounded-xl p-4 text-center shadow-sm`}>
+                                <p className={`${currentTheme.secondaryText} text-sm`}>
+                                    No scheduled doses today
+                                </p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

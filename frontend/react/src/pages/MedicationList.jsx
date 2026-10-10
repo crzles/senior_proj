@@ -1,13 +1,28 @@
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
 
 function MedicationList() {
-    const {demoMedications} = useDemo()
+    const [searchQuery, setSearchQuery] = useState("")
+    const [typeFilter, setTypeFilter] = useState("All")
+    const [showProfileMenu, setShowProfileMenu] = useState(false)
+
+    const {demoUser, demoMedications} = useDemo()
     const {currentTheme} = useTheme()
     const navigate = useNavigate()
 
-    const medications = demoMedications
+    const medications = demoMedications.filter((medication) => {
+        const matchesSearch = medication.med_name
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
+
+        const matchesType =
+            typeFilter === "All" ||
+            medication.med_type === typeFilter
+
+        return matchesSearch && matchesType
+    })
 
     function goToAddMedication() {
         navigate("/add-medication")
@@ -79,29 +94,68 @@ function MedicationList() {
         <div className={`min-h-screen ${currentTheme.background} p-4 pb-24 flex flex-col`}>
 
             {/* Header */}
-            <div className="mb-4">
-                <p className={`text-sm ${currentTheme.secondaryText}`}>
-                    PillBug
-                </p>
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <p className={`${currentTheme.secondaryText} text-sm`}>
+                        PillBug
+                    </p>
 
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className={`text-xl font-bold ${currentTheme.text}`}>
-                            My Medications
-                        </h1>
+                    <h1 className={`${currentTheme.text} text-xl font-bold`}>
+                        My Medications
+                    </h1>
 
-                        <p className={`text-sm ${currentTheme.secondaryText}`}>
-                            Keep track of your medications and supplements
-                        </p>
+                    <p className={`${currentTheme.secondaryText} text-sm`}>
+                        Keep track of your medications and supplements
+                    </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {/* Profile Button */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowProfileMenu((open) => !open)}
+                            aria-label="Open profile menu"
+                            aria-expanded={showProfileMenu}
+                            className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
+                        >
+                            {demoUser
+                                ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
+                                : "?"}
+                        </button>
+
+                        {showProfileMenu && (
+                            <div className={`absolute right-0 top-12 z-30 w-56 ${currentTheme.card} ${currentTheme.border} border rounded-xl p-3 shadow-lg`}>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full flex items-center justify-center font-semibold`}>
+                                        {demoUser
+                                            ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
+                                            : "?"}
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <p className={`${currentTheme.text} font-semibold truncate`}>
+                                            {demoUser
+                                                ? `${demoUser.firstName} ${demoUser.lastName}`
+                                                : "Guest"}
+                                        </p>
+                                        <p className={`${currentTheme.secondaryText} text-xs`}>
+                                            Version 1.0.0
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        setShowProfileMenu(false)
+                                        navigate("/")
+                                    }}
+                                    className="w-full text-left text-red-500 hover:bg-red-50 rounded-lg px-3 py-2 text-sm font-medium"
+                                >
+                                    Sign out
+                                </button>
+                            </div>
+                        )}
                     </div>
-
-                    <button
-                        type="button"
-                        onClick={goToAddMedication}
-                        className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
-                    >
-                        +
-                    </button>
                 </div>
             </div>
 
@@ -112,8 +166,8 @@ function MedicationList() {
                 </p>
 
                 <h2 className="text-lg font-bold">
-                    {medications.length}{" "}
-                    {medications.length === 1
+                    {demoMedications.length}{" "}
+                    {demoMedications.length === 1
                         ? "medication"
                         : "medications"}{" "}
                     added
@@ -123,13 +177,57 @@ function MedicationList() {
             {/* Your Medications */}
             <div className="mb-4">
 
-                <h2 className={`text-lg font-bold mb-2 ${currentTheme.text}`}>
+                <h2 className={`text-lg font-bold mb-3 ${currentTheme.text}`}>
                     Your Medications
                 </h2>
 
+                {/* Search Bar */}
+                <div className={`flex items-center gap-2 ${currentTheme.card} border ${currentTheme.border} rounded-xl px-3 py-2 mb-3`}>
+                    <span>🔍</span>
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder="Search medications by name..."
+                        className={`w-full bg-transparent outline-none text-sm ${currentTheme.text}`}
+                    />
+                </div>
+
+                {/* Type Filter */}
+                <div className="flex gap-2 mb-4">
+                    {["All", "Medication", "Supplement"].map((type) => (
+                        <button
+                            key={type}
+                            type="button"
+                            onClick={() => setTypeFilter(type)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                                typeFilter === type
+                                    ? `${currentTheme.primary} text-white`
+                                    : `${currentTheme.card} ${currentTheme.secondaryText} border ${currentTheme.border}`
+                            }`}
+                        >
+                            {type === "All"
+                                ? "All"
+                                : type === "Medication"
+                                    ? "Medications"
+                                    : "Supplements"}
+                        </button>
+                    ))}
+                </div>
+
                 <div className="space-y-3">
 
-                    {medications.map((medication) => (
+                    {medications.length === 0 ? (
+                        <div className={`${currentTheme.card} rounded-xl p-6 text-center shadow-sm`}>
+                            <p className={`${currentTheme.text} font-semibold`}>
+                                No matching medications
+                            </p>
+                            <p className={`${currentTheme.secondaryText} text-sm mt-1`}>
+                                Try another name or change the type filter.
+                            </p>
+                        </div>
+                    ) : (
+                    medications.map((medication) => (
                         <div
                             key={medication.id}
                             className={`${currentTheme.card} rounded-xl p-4 shadow-sm`}
@@ -223,7 +321,8 @@ function MedicationList() {
                             </div>
 
                         </div>
-                    ))}
+                    ))
+                    )}
 
                 </div>
             </div>
