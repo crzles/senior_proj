@@ -48,7 +48,7 @@ def get_curr_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get
     credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials.", headers={"WWW-Authenticate": "Bearer"},)
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload("sub")
+        email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
     except InvalidTokenError:
@@ -71,8 +71,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         last_name=user.last_name,
         email=user.email,
         password_hash=pwd_context.hash(user.password), #will hash user.password
-        dob=user.dob,
-        terms=user.terms_accepted
+        d_o_b=user.d_o_b,
+        terms_accepted_at=user.terms_accepted_at
     )
     db.add(new_user) #adds new user to app_user db
     db.commit()
