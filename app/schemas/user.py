@@ -15,14 +15,15 @@ class UserCreate(BaseModel): #inherits BaseModel from Pydantic
     last_name: str = Field(min_length=1, max_length=50)
     email: EmailStr
     password: str = Field(min_length=8)
-    dob: date
-    terms_accepted: bool
+    d_o_b: date
+    terms_accepted_at: datetime
 
 class UserResponse(BaseModel):
     id: int
     first_name: str
     last_name: str
     email: str
+    d_o_b: date
     terms_version: str
     dark_mode: bool
     created_at: datetime
