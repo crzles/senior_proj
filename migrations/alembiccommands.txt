@@ -1,0 +1,11 @@
+1. sync with any new changes/updates to the db tables:
+        alembic upgrade head
+
+2. if you did make a change to a db table and need to update(create a migration) the change in pgadmin:
+        alembic revision --autogenerate -m "your description of the change"
+
+    2a. once generated, review the script that it generates in versions/ if everything seems good to go,
+    run this command to push changes into pgadmin(never commit a migration file wihtout reviewing it):
+                alembic upgrade head
+
+3. go into pgadmin and refresh your pillbug database to see the new changes
