@@ -71,7 +71,7 @@ class MedicationBase(BaseModel):
     pill_qty: Optional[Decimal] = Field(
         default=None,
         ge=0,
-        max_digits=3,
+        max_digits=7,
         decimal_places=2
     )
     requirements: Optional[str] = None
@@ -103,7 +103,7 @@ class MedicationUpdate(BaseModel):
     pill_qty: Optional[Decimal] = Field(
         default=None,
         ge=0,
-        max_digits=3,
+        max_digits=7,
         decimal_places=2
     )
     requirements: Optional[str] = None
