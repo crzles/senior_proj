@@ -3,7 +3,7 @@ import {createContext, useContext, useState} from "react"
 const DemoContext = createContext()
 
 export function DemoProvider({children}) {
-    const [demoMode, setDemoMode] = useState(true)
+    const [demoMode, setDemoMode] = useState(false)
     const demoUserData = {
         firstName: "Rollie",
         lastName: "Pollie",
@@ -63,10 +63,21 @@ export function DemoProvider({children}) {
     }
 ]
 
-const [medications, setMedications] = useState(demoMedicationData)
+// User-added medications are always kept; the sample medications only appear in demo mode.
+const [medications, setMedications] = useState([])
 const [doseLogs, setDoseLogs] = useState({})
 
-const demoMedications = demoMode ? medications : []
+// Edits are stored by id so they apply to both sample and user-added medications.
+const [medicationEdits, setMedicationEdits] = useState({})
+
+const demoMedications = (
+    demoMode
+        ? [...demoMedicationData, ...medications]
+        : medications
+).map((medication) => ({
+    ...medication,
+    ...medicationEdits[medication.id],
+}))
 
 function getDoseKey(medicationId, time, date = new Date()) {
     const year = date.getFullYear()
@@ -103,6 +114,16 @@ function addMedication(medication) {
     ])
 }
 
+function updateMedication(medicationId, changes) {
+    setMedicationEdits((currentEdits) => ({
+        ...currentEdits,
+        [medicationId]: {
+            ...currentEdits[medicationId],
+            ...changes,
+        },
+    }))
+}
+
     return (
         <DemoContext.Provider
             value={{
@@ -114,6 +135,7 @@ function addMedication(medication) {
                 getDoseKey,
                 toggleDoseTaken,
                 addMedication,
+                updateMedication,
             }}
         >
             {children}
