@@ -36,7 +36,7 @@ class Medication(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
 
 
-#used on quickview
+#used on home
 #constraints: https://medium.com/@ezekieloluwadamy/dive-deeper-into-sqlalchemy-core-mastering-keys-constraints-and-relationships-in-sqlalchemy-ca71a6127d74
 
 class Refill(Base):
