@@ -8,7 +8,7 @@ from app.routers.auth import get_curr_user
 from app.schemas.health import *
 
 router = APIRouter(
-    prefix="api/symptoms", 
+    prefix="/api/symptoms",
     tags=["symptoms"]
 )
 
