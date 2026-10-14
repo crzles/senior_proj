@@ -1,12 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models.medication import Reminder
+from app.models.medication import Medication, Reminder
 from app.models.user import App_User
 from app.routers.auth import get_curr_user
-from app.routers.medication import get_user_med
 from app.schemas.medication import ReminderCreate, ReminderResponse, ReminderUpdate
 
 
@@ -15,62 +12,56 @@ router = APIRouter(
     tags=["reminders"]
 )
 
-DUPLICATE_TIME = "This medication already has a reminder at that time"
-
-#helper function
-def _get_reminder(db: Session, med_id: int, reminder_id: int, user: App_User) -> Reminder:
-    get_user_med(db, med_id, user)  # 404s if the med isn't the user's
-    reminder = db.scalar(select(Reminder).where(Reminder.id == reminder_id, Reminder.med_id == med_id))
-    if reminder is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reminder not found")
-    return reminder
-
 
 # GET /
 @router.get("/", response_model=list[ReminderResponse])
-def list_reminders(med_id: int, db: Session = Depends(get_db), curr_user: App_User = Depends(get_curr_user)):
-    get_user_med(db, med_id, curr_user)
+def get_reminders(med_id: int, db: Session = Depends(get_db), curr_user: App_User = Depends(get_curr_user)):
+    medication = db.query(Medication).filter(Medication.id==med_id, Medication.user_id==curr_user.id).first()
 
-    query = select(Reminder).where(Reminder.med_id == med_id)
-    query = query.order_by(Reminder.dose_time)
+    if not medication:
+        raise HTTPException(status_code=404, detail="Medication not found.")
 
-    reminders = db.scalars(query).all()
+    reminders = db.query(Reminder).filter(Reminder.med_id==med_id).order_by(Reminder.dose_time).all()
     return reminders
 
 
 # POST /
 @router.post("/", response_model=ReminderResponse, status_code=status.HTTP_201_CREATED)
 def create_reminder(med_id: int, reminder: ReminderCreate, db: Session = Depends(get_db), curr_user: App_User = Depends(get_curr_user)):
-    get_user_med(db, med_id, curr_user)
-    reminder = Reminder(med_id=med_id, dose_time=reminder.dose_time)
-    db.add(reminder)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, DUPLICATE_TIME)
-    db.refresh(reminder)
-    return reminder
+    medication = db.query(Medication).filter(Medication.id==med_id, Medication.user_id==curr_user.id).first()
+
+    if not medication:
+        raise HTTPException(status_code=404, detail="Medication not found")
+
+    new_reminder = Reminder(dose_time=reminder.dose_time, med_id=med_id)
+
+    db.add(new_reminder)
+    db.commit()
+    db.refresh(new_reminder)
+        
+    return new_reminder
 
 
 
 # PATCH /{id}
 @router.patch("/{reminder_id}", response_model=ReminderResponse)
 def update_reminder(med_id: int, reminder_id: int, update: ReminderUpdate, db: Session = Depends(get_db), curr_user: App_User = Depends(get_curr_user)):
-    reminder = _get_reminder(db, med_id, reminder_id, curr_user)
-    data = update.model_dump(exclude_unset=True)
+    medication = db.quer(Medication).filter(Medication.id==med_id, Medication.user_id==curr_user.id).first()
 
-    if any(value is None for value in data.values()):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "dose_time and is_active cannot be null")
+    if not medication:
+        raise HTTPException(status_code=404, details="Medication not found.")
 
-    for field, value in data.items():
+    reminder = db.query(Reminder).filter(Reminder.id==reminder_id, Reminder.med_id==med_id).first()
+
+    if not reminder:
+        raise HTTPException(status_code=404, detail="Reminder not found.")
+    
+    for field, value in update.model_dump(exclude_unset=True).items():
         setattr(reminder, field, value)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, DUPLICATE_TIME)
+    
+    db.commit()
     db.refresh(reminder)
+
     return reminder
 
 
@@ -78,7 +69,15 @@ def update_reminder(med_id: int, reminder_id: int, update: ReminderUpdate, db: S
 # DELETE /{id}
 @router.delete("/{reminder_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_reminder(med_id: int, reminder_id: int, db: Session = Depends(get_db), curr_user: App_User = Depends(get_curr_user)):
-    reminder = _get_reminder(db, med_id, reminder_id, curr_user)
+    medication = db.query(Medication).filter(Medication.id==med_id, Medication.user_id==curr_user.id).first()
+
+    if not medication:
+        raise HTTPException(status_code=404, detail="Medication not found.")
+    
+    reminder = db.query(Reminder).filter(Reminder.id==reminder_id, Reminder.med_id==med_id).first()
+
+    if not reminder:
+        raise HTTPException(status_code=404, detail="Reminder not found.")
+
     db.delete(reminder)
     db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
