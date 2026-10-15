@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi import FastAPI, HTTPException
 from app.database import engine, Base
-from app.routers import auth, drug_label, medication
+from app.routers import auth, drug_label, medication, reminders, doses, refills, symptoms, users
 
 
 #for db table to be created inside postgres
@@ -19,8 +19,13 @@ async def root():
 
 #routers
 app.include_router(auth.router)
+app.include_router(users.router)
 app.include_router(drug_label.router)
 app.include_router(medication.router)
+app.include_router(reminders.router)
+app.include_router(doses.router)
+app.include_router(refills.router)
+app.include_router(symptoms.router)
 
 ROOT_DIR = Path(__file__).resolve().parent.parent  # senior_proj/
 DIST_DIR = ROOT_DIR / "frontend" / "react" / "dist"
