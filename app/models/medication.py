@@ -27,7 +27,7 @@ class Medication(Base):
     is_refillable = Column(Boolean, server_default=text("false"), nullable=False)
     refill_reminder = Column(Integer, nullable=True)
     # pre-filled from openFDA when available, but can be updated by user
-    pill_qty = Column(Numeric(3, 2), nullable=True)
+    pill_qty = Column(Numeric(7, 2), nullable=True)
     # pre-filled from openFDA when available, but can be updated by user
     requirements = Column(Text, nullable=True)
     # pre-filled from openFDA when available, but can be updated by user
