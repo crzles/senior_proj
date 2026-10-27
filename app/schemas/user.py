@@ -1,7 +1,8 @@
 from pydantic import BaseModel, ConfigDict, Field, EmailStr
 #from sqlmodel import Field, SQLModel
 from datetime import datetime, date
-from typing import Optional
+from pydantic import field_validator
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 #used for optional attributes vvvv
 #from typing import Optional
@@ -17,6 +18,16 @@ class UserCreate(BaseModel): #inherits BaseModel from Pydantic
     password: str = Field(min_length=8)
     d_o_b: date
     terms_accepted_at: datetime
+    timezone: str = "UTC"
+
+    @field_validator("timezone")
+    @classmethod
+    def valid_timezone(cls, value):
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("Unknown timezone")
+        return value
 
 class UserResponse(BaseModel):
     id: int
@@ -27,6 +38,7 @@ class UserResponse(BaseModel):
     terms_version: str
     dark_mode: bool
     created_at: datetime
+    timezone: str
 
     model_config = ConfigDict(from_attributes=True)
 

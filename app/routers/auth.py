@@ -1,4 +1,3 @@
-#url routers example - not complete
 from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import APIRouter, HTTPException, Depends, status
@@ -72,7 +71,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         password_hash=pwd_context.hash(user.password), #will hash user.password
         d_o_b=user.d_o_b,
-        terms_accepted_at=user.terms_accepted_at
+        terms_accepted_at=user.terms_accepted_at,
+        timezone=user.timezone,
     )
     db.add(new_user) #adds new user to app_user db
     db.commit()
@@ -90,6 +90,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db:Session = Depends
     return Token(access_token=access_token, token_type="bearer")
 
 
-@router.get("/me", response_model=UserResponse)
-def read_curr_user(curr_user: App_User = Depends(get_curr_user)):
-    return curr_user
+#futurework
+# POST /forgot-password
+# POST /change-password
+# GET /security-questions
+
+
