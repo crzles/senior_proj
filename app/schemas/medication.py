@@ -51,6 +51,14 @@ class DoseLogResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TodayDoseResponse(DoseLogResponse):
+    remind_count: int
+    med_id: int
+    med_name: str
+    dosage: str
+    pills_per_dose: float
+    
+
 class MedicationBase(BaseModel):
     med_name: str
     med_type: Optional[str] = None
@@ -117,4 +125,6 @@ class MedicationResponse(MedicationBase):
     user_id: int
     created_at: datetime
 
+
     model_config = ConfigDict(from_attributes=True)
+

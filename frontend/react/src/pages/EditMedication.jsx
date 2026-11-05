@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useSearchParams, useNavigate } from "react-router-dom"
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
 
@@ -7,9 +7,10 @@ function EditMedication() {
     const [searchParams] = useSearchParams()
     const medicationId = searchParams.get("id")
 
-    const {demoMedications} = useDemo()
+    const {demoMedications, updateMedication} = useDemo()
     const {currentTheme} = useTheme()
     const navigate = useNavigate()
+    const location = useLocation()
 
     const medication = demoMedications.find(
         (med) => String(med.id) === medicationId
@@ -122,30 +123,28 @@ function EditMedication() {
             return
         }
 
-        const medicationData = {
-            medicationName,
-            medicationType,
-            dosage,
-            pillsPerDose: Number(pillsPerDose),
-            frequency,
-            customHours,
-            startDate,
-            endDate,
-            refillable: refillable === "yes",
-            pillQuantity:
+        updateMedication(medication.id, {
+            med_name: medicationName.trim(),
+            med_type: medicationType,
+            dosage: dosage.trim(),
+            pills_per_dose: Number(pillsPerDose),
+            recurrence: frequency,
+            schedule_type: frequency,
+            start_date: startDate,
+            end_date: endDate || null,
+            is_refillable: refillable === "yes",
+            pill_qty:
                 refillable === "yes"
                     ? Number(pillQuantity)
                     : null,
-            refillReminder:
-                refillable === "yes"
+            refill_reminder:
+                refillable === "yes" && refillReminder
                     ? Number(refillReminder)
                     : null,
-            instructions,
-            avoidNotes,
-            storageNotes,
-        }
-
-        console.log("Updated medication:", medicationData)
+            requirements: instructions.trim(),
+            avoid_notes: avoidNotes.trim(),
+            storage_notes: storageNotes.trim(),
+        })
 
         setMessage("Medication updated successfully!")
 
@@ -154,8 +153,14 @@ function EditMedication() {
         }, 1000)
     }
 
+    // Go back to wherever the user came from. If this page was opened
+    // directly (no previous page in the app), fall back to the medication list.
     function cancelEdit() {
-        navigate("/MedPage")
+        if (location.key !== "default") {
+            navigate(-1)
+        } else {
+            navigate("/MedPage")
+        }
     }
 
     const inputClass =
@@ -191,7 +196,7 @@ function EditMedication() {
                     <button
                         type="button"
                         onClick={cancelEdit}
-                        aria-label="Back to medications"
+                        aria-label="Back"
                         className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
                     >
                         ←

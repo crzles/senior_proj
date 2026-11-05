@@ -17,7 +17,7 @@ class App_User(Base):
     failed_reset_attempts = Column(Integer, server_default=text("0"), nullable=False)
     reset_locked_until = Column(TIMESTAMP(timezone=True), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'), nullable=False)
-
+    timezone = Column(String(50), server_default="UTC", nullable=False)
 
 class SecurityQuestion(Base):
     __tablename__ = "security_questions"

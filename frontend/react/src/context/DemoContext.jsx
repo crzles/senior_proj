@@ -3,7 +3,7 @@ import {createContext, useContext, useState} from "react"
 const DemoContext = createContext()
 
 export function DemoProvider({children}) {
-    const [demoMode, setDemoMode] = useState(true)
+    const [demoMode, setDemoMode] = useState(false)
     const demoUserData = {
         firstName: "Rollie",
         lastName: "Pollie",
@@ -28,8 +28,6 @@ export function DemoProvider({children}) {
         weekly_day: null,
         custom_days: [],
         custom_times: [],
-        taken: false,
-        taken_at: null,
         start_date: "2026-10-01",
         end_date: null,
         is_refillable: false,
@@ -54,8 +52,6 @@ export function DemoProvider({children}) {
         weekly_day: null,
         custom_days: [],
         custom_times: [],
-        taken: false,
-        taken_at: null,
         start_date: "2026-10-01",
         end_date: null,
         is_refillable: false,
@@ -67,24 +63,44 @@ export function DemoProvider({children}) {
     }
 ]
 
-const [medications, setMedications] = useState(demoMedicationData)
+// User-added medications are always kept; the sample medications only appear in demo mode.
+const [medications, setMedications] = useState([])
+const [doseLogs, setDoseLogs] = useState({})
 
-const demoMedications = demoMode ? medications : []
+// Edits are stored by id so they apply to both sample and user-added medications.
+const [medicationEdits, setMedicationEdits] = useState({})
 
-function toggleMedicationTakenStatus(medicationName) {
-    setMedications((currentMedications) =>
-        currentMedications.map((medication) =>
-            medication.med_name === medicationName
-                ? {
-                    ...medication,
-                    taken: !medication.taken,
-                    taken_at: medication.taken
-                        ? null
-                        : new Date().toISOString(),
-                }
-                : medication
-        )
-    )
+const demoMedications = (
+    demoMode
+        ? [...demoMedicationData, ...medications]
+        : medications
+).map((medication) => ({
+    ...medication,
+    ...medicationEdits[medication.id],
+}))
+
+function getDoseKey(medicationId, time, date = new Date()) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+
+    const dateKey = `${year}-${month}-${day}`
+
+    return `${medicationId}|${dateKey}|${time}`
+}
+
+function toggleDoseTaken(doseKey) {
+    setDoseLogs((currentLogs) => {
+        const updatedLogs = {...currentLogs}
+
+        if (updatedLogs[doseKey]) {
+            delete updatedLogs[doseKey]
+        } else {
+            updatedLogs[doseKey] = new Date().toISOString()
+        }
+
+        return updatedLogs
+    })
 }
 
 function addMedication(medication) {
@@ -93,8 +109,19 @@ function addMedication(medication) {
         {
             ...medication,
             id: Date.now(),
+            added_at: new Date().toISOString(),
         },
     ])
+}
+
+function updateMedication(medicationId, changes) {
+    setMedicationEdits((currentEdits) => ({
+        ...currentEdits,
+        [medicationId]: {
+            ...currentEdits[medicationId],
+            ...changes,
+        },
+    }))
 }
 
     return (
@@ -104,8 +131,11 @@ function addMedication(medication) {
                 setDemoMode,
                 demoUser,
                 demoMedications,
-                toggleMedicationTakenStatus,
+                doseLogs,
+                getDoseKey,
+                toggleDoseTaken,
                 addMedication,
+                updateMedication,
             }}
         >
             {children}
