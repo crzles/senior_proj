@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
-import SymptomHistory from "../components/SymptomHistory"
 import { useTheme } from "../context/ThemeContext"
+import SymptomHistory from "../components/SymptomHistory"
 import pillbugLogo from "../assets/pillbug-logo.png"
 
 const profileSections = [
