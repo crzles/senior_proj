@@ -1,34 +1,31 @@
+import datetime as dt
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
-from datetime import date
+from typing import Optional, Literal
 
 #create/request model: defines only what a client needs to send
 #response model: controls exactly what data gets sent back from client,
 #protecting sensitive fields
 
-class SymptomCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=50)
+Severity = Literal["Mild", "Moderate", "Severe"]
 
-
-class SymptomResponse(BaseModel):
-    id: int
-    name: str
-
-    model_config = ConfigDict(from_attributes=True)
-
-
+#Symptom log page form
 class SymptomLogCreate(BaseModel):
-    symptom_id: int
-    med_id: Optional[int] = None
-    logged_on: Optional[date] = None
-    note: Optional[str] = None
+    symptom: str = Field(min_length=1, max_length=100)
+    date: dt.date
+    time: dt.time
+    severity: Severity
+    duration: str = ""
+    notes: str = ""
 
-class SymptomLogResponse(BaseModel):
+#editing an entry in the symptom history
+class SymptomLogUpdate(BaseModel):
+    symptom: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    severity: Optional[Severity] = None
+    duration: Optional[str] = None
+    notes: Optional[str] = None
+
+class SymptomLogResponse(SymptomLogCreate):
     id: int
-    user_id: int
-    symptom_id: int
-    med_id: Optional[int] = None
-    logged_on: date
-    note: Optional[str] = None
+    logged_at: dt.datetime
 
     model_config = ConfigDict(from_attributes=True)

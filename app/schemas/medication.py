@@ -3,10 +3,13 @@ from datetime import datetime, time, date
 from decimal import Decimal
 from typing import Optional, Literal
 
+#times are sent as "HH:MM" strings, e.g. "08:00"
+TIME_PATTERN = r"^\d{2}:\d{2}$"
+
 class RefillCreate(BaseModel):
     refilled_at: Optional[datetime] = None
-    qty_added: int
-    dosage: Optional[str] = Field(default=None, max_length=80)
+    qty_added: int = Field(gt=0)
+    dosage: Optional[str] = Field(default=None, max_length=50)
     pharmacy_name: Optional[str] = None
     pharmacy_address: Optional[str] = None
 
@@ -37,25 +40,23 @@ class ReminderResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class DoseLogUpdate(BaseModel):
-    status: Literal["taken", "skipped"] #taken/skip buttons
+#home page checkmark: marks one dose as taken / not taken
+class DoseToggle(BaseModel):
+    med_id: int
+    dose_date: date
+    dose_time: str = Field(pattern=TIME_PATTERN)
 
-
-class DoseLogResponse(BaseModel):
-    id: int
-    reminder_id: int
-    scheduled_for: datetime
-    status: Literal["pending", "taken", "skipped", "missed"] #buttons
-    taken_at: Optional[datetime] = None
+class DoseResponse(BaseModel):
+    med_id: int
+    dose_date: date
+    dose_time: str
+    taken_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
-class TodayDoseResponse(DoseLogResponse):
-    remind_count: int
-    med_id: int
-    med_name: str
-    dosage: str
-    pills_per_dose: float
+class DoseToggleResponse(BaseModel):
+    taken: bool
+    taken_at: Optional[datetime] = None
     
 class MedicationBase(BaseModel):
     med_name: str
