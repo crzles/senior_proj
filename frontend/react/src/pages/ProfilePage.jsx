@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom"
+import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
+import SymptomHistory from "../components/SymptomHistory"
 import pillbugLogo from "../assets/pillbug-logo.png"
 
 const profileSections = [
@@ -24,6 +26,7 @@ const profileSections = [
 function ProfilePage() {
     const navigate = useNavigate()
     const {currentTheme} = useTheme()
+    const {symptomLogs} = useDemo()
 
     return (
         <div className={`min-h-screen ${currentTheme.background} p-4`}>
@@ -64,9 +67,13 @@ function ProfilePage() {
                                     ⌄
                                 </span>
                             </summary>
-                            <p className={`${currentTheme.secondaryText} border-t ${currentTheme.border} px-4 py-4 text-sm`}>
-                                {description}
-                            </p>
+                            {title === "Symptom history" && symptomLogs.length > 0 ? (
+                                <SymptomHistory />
+                            ) : (
+                                <p className={`${currentTheme.secondaryText} border-t ${currentTheme.border} px-4 py-4 text-sm`}>
+                                    {description}
+                                </p>
+                            )}
                         </details>
                     ))}
                 </div>
