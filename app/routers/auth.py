@@ -61,6 +61,10 @@ def get_curr_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get
 
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    #the sign-up page checks the box too, but the backend checks again
+    if not user.terms_accepted:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Please agree to the Terms of Service.")
+
     existing_user = db.query(App_User).filter(App_User.email == user.email).first() #search for email in db
     if existing_user: #if email exist
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered.") #returns http 400 error
@@ -71,7 +75,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         password_hash=pwd_context.hash(user.password), #will hash user.password
         d_o_b=user.d_o_b,
-        terms_accepted_at=user.terms_accepted_at,
+        terms_accepted_at=datetime.now(timezone.utc), #saved when the box was checked
         timezone=user.timezone,
     )
     db.add(new_user) #adds new user to app_user db

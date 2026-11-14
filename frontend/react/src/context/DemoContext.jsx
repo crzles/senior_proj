@@ -3,7 +3,7 @@ import {createContext, useContext, useState} from "react"
 const DemoContext = createContext()
 
 export function DemoProvider({children}) {
-    const [demoMode, setDemoMode] = useState(false)
+    const [demoMode, setDemoMode] = useState(true)
     const demoUserData = {
         firstName: "Rollie",
         lastName: "Pollie",
@@ -63,9 +63,54 @@ export function DemoProvider({children}) {
     }
 ]
 
+// Sample pharmacies for the map page, only shown in demo mode. opens / closes are 24-hour
+// "HH:MM" times; open status is worked out from the current time on the map page.
+// x / y only place the pins on the placeholder map (percent of the map area).
+const demoPharmacyData = [
+    {
+        id: 1,
+        name: "Maplewood Pharmacy",
+        address: "123 Maple Street, Springfield",
+        distance: "0.4 mi",
+        opens: "08:00",
+        closes: "21:00",
+        phone: "555-0101",
+        is24Hours: false,
+        x: 62,
+        y: 38,
+    },
+    {
+        id: 2,
+        name: "CareFirst Pharmacy",
+        address: "88 Oak Avenue, Springfield",
+        distance: "0.9 mi",
+        opens: null,
+        closes: null,
+        phone: "555-0102",
+        is24Hours: true,
+        x: 28,
+        y: 52,
+    },
+    {
+        id: 3,
+        name: "Riverside Drugs",
+        address: "410 River Road, Springfield",
+        distance: "1.6 mi",
+        opens: "08:00",
+        closes: "17:00",
+        phone: "555-0103",
+        is24Hours: false,
+        x: 74,
+        y: 72,
+    },
+]
+
+const demoPharmacies = demoMode ? demoPharmacyData : []
+
 // User-added medications are always kept; the sample medications only appear in demo mode.
 const [medications, setMedications] = useState([])
 const [doseLogs, setDoseLogs] = useState({})
+const [symptomLogs, setSymptomLogs] = useState([])
 
 // Edits are stored by id so they apply to both sample and user-added medications.
 const [medicationEdits, setMedicationEdits] = useState({})
@@ -114,6 +159,31 @@ function addMedication(medication) {
     ])
 }
 
+function addSymptomEntry(entry) {
+    setSymptomLogs((currentLogs) => [
+        {
+            ...entry,
+            id: Date.now(),
+            logged_at: new Date().toISOString(),
+        },
+        ...currentLogs,
+    ])
+}
+
+function updateSymptomEntry(entryId, changes) {
+    setSymptomLogs((currentLogs) =>
+        currentLogs.map((entry) =>
+            entry.id === entryId ? {...entry, ...changes} : entry
+        )
+    )
+}
+
+function deleteSymptomEntry(entryId) {
+    setSymptomLogs((currentLogs) =>
+        currentLogs.filter((entry) => entry.id !== entryId)
+    )
+}
+
 function updateMedication(medicationId, changes) {
     setMedicationEdits((currentEdits) => ({
         ...currentEdits,
@@ -131,7 +201,12 @@ function updateMedication(medicationId, changes) {
                 setDemoMode,
                 demoUser,
                 demoMedications,
+                demoPharmacies,
                 doseLogs,
+                symptomLogs,
+                addSymptomEntry,
+                updateSymptomEntry,
+                deleteSymptomEntry,
                 getDoseKey,
                 toggleDoseTaken,
                 addMedication,

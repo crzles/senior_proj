@@ -688,14 +688,14 @@ function HomePage() {
                     </button>
 
                     <button
-                        onClick={() => navigate("/coming-soon")}
+                        onClick={() => navigate("/map")}
                         className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">📍</span>
                         Map
                     </button>
 
                     <button
-                        onClick={() => navigate("/coming-soon")}
+                        onClick={() => navigate("/symptoms")}
                         className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">📝</span>
                         Symptoms
@@ -709,7 +709,7 @@ function HomePage() {
                     </button>
 
                     <button
-                        onClick={() => navigate("/coming-soon")}
+                        onClick={() => navigate("/profile")}
                         className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
                         <span className="text-lg">👤</span>
                         Profile

@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     DATABASE_URL : str
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    GOOGLE_MAPS_API_KEY: str
+    VITE_GOOGLE_MAPS_API_KEY: str
 
     model_config = SettingsConfigDict (
         env_file=".env",

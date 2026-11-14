@@ -8,6 +8,9 @@ import MedicationList from "./pages/MedicationList"
 import AddMedication from "./pages/AddMedication"
 import EditMedication from "./pages/EditMedication"
 import MedicationInfo from "./pages/MedicationInfo"
+import ProfilePage from "./pages/ProfilePage"
+import MapPage from "./pages/MapPage"
+import SymptomPage from "./pages/SymptomPage"
 
 function App() {
     return (
@@ -21,6 +24,9 @@ function App() {
                         <Route path="/add-medication" element={<AddMedication />} />
                         <Route path="/edit-medication" element={<EditMedication />} />
                         <Route path="/medication-info" element={<MedicationInfo />} />
+                        <Route path="/profile" element={<ProfilePage />} />
+                        <Route path="/map" element={<MapPage />} />
+                        <Route path="/symptoms" element={<SymptomPage />} />
                         <Route path="/coming-soon" element={<ComingSoon />} />
                     </Routes>
                 </DemoProvider>
