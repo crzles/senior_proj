@@ -2,12 +2,14 @@
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
-import {ArrowLeft, ChevronLeft, Clock, ListChecks, Package, Pencil, Pill} from "lucide-react"
+import {ArrowLeft, ChevronLeft, Clock, ListChecks, Package, Pencil, Pill, Trash2, TriangleAlert} from "lucide-react"
+import DrugLabelSection from "../components/DrugLabelSection"
+import RefillSection from "../components/RefillSection"
 
 function MedicationInfo() {
     const [searchParams] = useSearchParams()
     const medicationId = searchParams.get("id")
-    const { demoMedications } = useDemo()
+    const { demoMedications, deleteMedication } = useDemo()
     const { currentTheme } = useTheme()
     const navigate = useNavigate()
     const location = useLocation()
@@ -25,6 +27,25 @@ function MedicationInfo() {
     const medication = demoMedications.find(
         (med) => String(med.id) === medicationId
     )
+
+    async function handleDelete() {
+        const confirmed = window.confirm(
+            `Delete ${medication.med_name}? Its reminders and refill history will be removed too.`
+        )
+
+        if (!confirmed) {
+            return
+        }
+
+        try {
+            await deleteMedication(medication.id)
+        } catch (error) {
+            alert(error.message)
+            return
+        }
+
+        navigate("/MedPage", {replace: true})
+    }
 
     if (!medication) {
         return (
@@ -170,18 +191,11 @@ function MedicationInfo() {
                     </div>
                 </section>
 
-                {/* Symptoms / Tags */}
-                <section className={`${inputCard} mb-4`}>
-                    <div className="flex items-center justify-between gap-3">
-                        <h3 className={`text-sm font-semibold ${currentTheme.text}`}>
-                            Symptoms / Tags
-                        </h3>
+                {/* Refills (only for refillable medications) */}
+                <RefillSection medication={medication} />
 
-                        <span className={`px-3 py-1 rounded-full ${currentTheme.accentSoft} text-xs`}>
-                            Pain relief
-                        </span>
-                    </div>
-                </section>
+                {/* What the linked FDA drug label says (only when a label is linked) */}
+                <DrugLabelSection medication={medication} />
 
                 {/* Additional Information */}
                 <section className={`${inputCard} mb-4`}>
@@ -201,7 +215,7 @@ function MedicationInfo() {
 
                     <div className={`flex gap-3 py-3 border-t ${currentTheme.border}`}>
                         <span className={`w-7 h-7 rounded-full ${currentTheme.accentSoft} flex items-center justify-center`}>
-                            !
+                            <TriangleAlert className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
                             <h3 className={`text-sm font-semibold ${currentTheme.text}`}>
@@ -243,9 +257,17 @@ function MedicationInfo() {
                     <button
                         type="button"
                         onClick={() => navigate("/MedPage")}
-                        className={`w-full py-3 border ${currentTheme.border} ${currentTheme.card} text-blue-600 rounded-lg text-sm font-semibold`}
+                        className={`w-full py-3 border ${currentTheme.border} ${currentTheme.card} ${currentTheme.accentText} rounded-lg text-sm font-semibold`}
                     >
                         My Medications
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleDelete}
+                        className={`w-full py-3 border ${currentTheme.border} ${currentTheme.card} ${currentTheme.dangerText} rounded-lg text-sm font-semibold`}
+                    >
+                        <Trash2 className="mr-2 inline h-4 w-4" aria-hidden="true" />Delete Medication
                     </button>
                 </div>
 

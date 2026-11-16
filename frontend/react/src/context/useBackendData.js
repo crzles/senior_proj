@@ -1,7 +1,8 @@
-import {useEffect, useState} from "react"
+import {useCallback, useEffect, useState} from "react"
 import * as authApi from "../api/auth"
 import {clearToken, getToken, onUnauthorized} from "../api/client"
 import * as medicationApi from "../api/medications"
+import * as pharmacyApi from "../api/pharmacies"
 import * as symptomApi from "../api/symptoms"
 
 // The id used to track one dose on one day, shared by demo mode and the backend.
@@ -126,6 +127,24 @@ function toFrontendSymptomLog(log) {
     }
 }
 
+const initialPharmacyState = {status: "idle", pharmacies: [], message: "", origin: null}
+
+// Asks the browser for the user's location.
+function getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("This browser can't share your location."))
+            return
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => resolve(position.coords),
+            reject,
+            {timeout: 10000, maximumAge: 5 * 60 * 1000}
+        )
+    })
+}
+
 // Signs the user in and loads everything from the backend. Used when demo mode is off.
 export function useBackendData(enabled) {
     const [user, setUser] = useState(null)
@@ -133,8 +152,14 @@ export function useBackendData(enabled) {
     const [medications, setMedications] = useState([])
     const [doseLogs, setDoseLogs] = useState({})
     const [symptomLogs, setSymptomLogs] = useState([])
+    // medication id -> its refills, newest first (loaded when a medication's page is opened)
+    const [refills, setRefills] = useState({})
+    // status: "idle" (loading), "ready", "denied" (location blocked) or "error"
+    const [pharmacyState, setPharmacyState] = useState(initialPharmacyState)
 
     function resetData() {
+        setRefills({})
+        setPharmacyState(initialPharmacyState)
         setUser(null)
         setMedications([])
         setDoseLogs({})
@@ -210,6 +235,37 @@ export function useBackendData(enabled) {
             cancelled = true
         }
     }, [enabled, user])
+
+    // Finds pharmacies near the user, nearest first.
+    const loadPharmacies = useCallback(async () => {
+        try {
+            const {latitude, longitude} = await getCurrentPosition()
+            const pharmacies = await pharmacyApi.listNearbyPharmacies(latitude, longitude)
+
+            setPharmacyState({
+                status: "ready",
+                pharmacies,
+                message: "",
+                origin: {lat: latitude, lng: longitude},
+            })
+        } catch (error) {
+            // GeolocationPositionError code 1 means the user (or browser) blocked location.
+            const denied = error.code === 1
+
+            setPharmacyState({
+                ...initialPharmacyState,
+                status: denied ? "denied" : "error",
+                message: denied
+                    ? "Location is turned off. Allow location access to see pharmacies near you."
+                    : error.message || "Couldn't load pharmacies right now.",
+            })
+        }
+    }, [])
+
+    const retryPharmacies = useCallback(() => {
+        setPharmacyState(initialPharmacyState)
+        loadPharmacies()
+    }, [loadPharmacies])
 
     async function signIn(email, password) {
         await authApi.logIn(email, password)
@@ -314,6 +370,47 @@ export function useBackendData(enabled) {
         )
     }
 
+    async function deleteMedication(medicationId) {
+        await medicationApi.deleteMedication(medicationId)
+
+        setMedications((current) => current.filter((medication) => medication.id !== medicationId))
+
+        // Forget its checked doses too (the backend removes them along with the medication).
+        setDoseLogs((current) =>
+            Object.fromEntries(
+                Object.entries(current).filter(([key]) => !key.startsWith(`${medicationId}|`))
+            )
+        )
+    }
+
+    const loadRefills = useCallback(async (medicationId) => {
+        try {
+            const list = await medicationApi.listRefills(medicationId)
+
+            setRefills((current) => ({...current, [medicationId]: list}))
+        } catch (error) {
+            console.error("Could not load refills:", error)
+        }
+    }, [])
+
+    // Logs a refill. The backend adds the quantity to the pill count, so do the same here.
+    async function addRefill(medicationId, refill) {
+        const created = await medicationApi.createRefill(medicationId, refill)
+
+        setRefills((current) => ({
+            ...current,
+            [medicationId]: [created, ...(current[medicationId] || [])],
+        }))
+
+        setMedications((current) =>
+            current.map((medication) =>
+                medication.id === medicationId
+                    ? {...medication, pill_qty: (medication.pill_qty || 0) + created.qty_added}
+                    : medication
+            )
+        )
+    }
+
     async function addSymptomEntry(entry) {
         const created = await symptomApi.createSymptomLog(entry)
 
@@ -345,6 +442,16 @@ export function useBackendData(enabled) {
         medications,
         doseLogs,
         symptomLogs,
+        refills,
+        loadRefills,
+        addRefill,
+        deleteMedication,
+        pharmacies: pharmacyState.pharmacies,
+        pharmacyStatus: pharmacyState.status,
+        pharmacyMessage: pharmacyState.message,
+        pharmacyOrigin: pharmacyState.origin,
+        loadPharmacies,
+        retryPharmacies,
         signIn,
         signUp,
         signOut,

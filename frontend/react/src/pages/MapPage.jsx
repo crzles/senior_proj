@@ -1,11 +1,14 @@
-import {useState} from "react"
+import {useCallback, useEffect, useState} from "react"
 import ProfileMenu from "../components/ProfileMenu"
 import {useDemo} from "../context/DemoContext"
 import {useTheme} from "../context/ThemeContext"
 import {Plus, Search} from "lucide-react"
 import BottomNav from "../components/BottomNav"
+import GoogleMap from "../components/GoogleMap"
 
 const filters = ["All", "Open now", "24 hours"]
+
+const MAP_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
 function toMinutes(time) {
     const [hour, minute] = time.split(":")
@@ -24,58 +27,133 @@ function formatTime(time) {
 }
 
 // Works out open status and the hours label from the current time.
+// opens / closes are today's hours as "HH:MM"; both are empty when the pharmacy is closed
+// today or its hours are unknown.
 function getHoursInfo(pharmacy, now) {
     if (pharmacy.is24Hours) {
         return {isOpen: true, label: "Open 24 hours"}
     }
 
-    const currentMinutes = now.getHours() * 60 + now.getMinutes()
-    const isOpen =
-        currentMinutes >= toMinutes(pharmacy.opens) &&
-        currentMinutes < toMinutes(pharmacy.closes)
+    if (!pharmacy.opens || !pharmacy.closes) {
+        return {isOpen: false, label: "Closed today or hours unavailable"}
+    }
 
-    return isOpen
-        ? {isOpen, label: `Open until ${formatTime(pharmacy.closes)}`}
-        : {isOpen, label: `Closed · Opens ${formatTime(pharmacy.opens)}`}
+    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+    const opens = toMinutes(pharmacy.opens)
+    const closes = toMinutes(pharmacy.closes)
+
+    // A pharmacy that closes after midnight has a closing time earlier than its opening time.
+    const isOpen = opens <= closes
+        ? currentMinutes >= opens && currentMinutes < closes
+        : currentMinutes >= opens || currentMinutes < closes
+
+    if (isOpen) {
+        return {isOpen, label: `Open until ${formatTime(pharmacy.closes)}`}
+    }
+
+    return {
+        isOpen,
+        label: currentMinutes < opens ? `Closed · Opens ${formatTime(pharmacy.opens)}` : "Closed for today",
+    }
+}
+
+// The placeholder map needs x / y percentages. Demo pharmacies have them; real ones only have
+// coordinates, so spread those across the area.
+function addPinPositions(pharmacies) {
+    const located = pharmacies.filter((pharmacy) => pharmacy.latitude != null)
+
+    if (located.length === 0) {
+        return pharmacies
+    }
+
+    const lats = located.map((pharmacy) => pharmacy.latitude)
+    const lngs = located.map((pharmacy) => pharmacy.longitude)
+    const [minLat, maxLat] = [Math.min(...lats), Math.max(...lats)]
+    const [minLng, maxLng] = [Math.min(...lngs), Math.max(...lngs)]
+
+    const spread = (value, min, max) => (max === min ? 50 : 15 + ((value - min) / (max - min)) * 70)
+
+    return pharmacies.map((pharmacy) =>
+        pharmacy.x != null || pharmacy.latitude == null
+            ? pharmacy
+            : {
+                ...pharmacy,
+                x: spread(pharmacy.longitude, minLng, maxLng),
+                y: 100 - spread(pharmacy.latitude, minLat, maxLat),
+            }
+    )
 }
 
 function MapPage() {
     const [search, setSearch] = useState("")
     const [activeFilter, setActiveFilter] = useState("All")
     const [selectedId, setSelectedId] = useState(null)
+    const [mapFailed, setMapFailed] = useState(false)
 
-    // TODO: Replace demoPharmacies with pharmacies from the backend once the endpoint exists.
-    const {demoPharmacies} = useDemo()
+    const {
+        demoMode, pharmacies, pharmacyStatus, pharmacyMessage, pharmacyOrigin,
+        loadPharmacies, retryPharmacies,
+    } = useDemo()
     const {theme, currentTheme} = useTheme()
+
+    // Real pharmacies come from the backend, near the user's location.
+    useEffect(() => {
+        if (!demoMode) {
+            loadPharmacies()
+        }
+    }, [demoMode, loadPharmacies])
+
+    const handleMapError = useCallback(() => setMapFailed(true), [])
 
     const now = new Date()
 
-    const visiblePharmacies = demoPharmacies
+    const visiblePharmacies = addPinPositions(pharmacies)
         .map((pharmacy) => ({...pharmacy, ...getHoursInfo(pharmacy, now)}))
         .filter((pharmacy) => {
-        const query = search.trim().toLowerCase()
-        const matchesSearch =
-            query === "" ||
-            pharmacy.name.toLowerCase().includes(query) ||
-            pharmacy.address.toLowerCase().includes(query)
+            const query = search.trim().toLowerCase()
+            const matchesSearch =
+                query === "" ||
+                pharmacy.name.toLowerCase().includes(query) ||
+                (pharmacy.address || "").toLowerCase().includes(query)
 
-        const matchesFilter =
-            activeFilter === "All" ||
-            (activeFilter === "Open now" && pharmacy.isOpen) ||
-            (activeFilter === "24 hours" && pharmacy.is24Hours)
+            const matchesFilter =
+                activeFilter === "All" ||
+                (activeFilter === "Open now" && pharmacy.isOpen) ||
+                (activeFilter === "24 hours" && pharmacy.is24Hours)
 
-        return matchesSearch && matchesFilter
-    })
+            return matchesSearch && matchesFilter
+        })
 
     // Fall back to the first visible result if the selected pharmacy was filtered out.
     const selectedPharmacy =
         visiblePharmacies.find((pharmacy) => pharmacy.id === selectedId) ||
         visiblePharmacies[0]
 
+    // The real map needs a key. Without one (or if it fails to load) the placeholder is shown.
+    const useRealMap = Boolean(MAP_KEY) && !mapFailed
+
+    const isLoading = !demoMode && pharmacyStatus === "idle"
+    const hasProblem = !demoMode && (pharmacyStatus === "denied" || pharmacyStatus === "error")
+
+    let overlayMessage = ""
+
+    if (isLoading) {
+        overlayMessage = "Finding pharmacies near you..."
+    } else if (hasProblem) {
+        overlayMessage = pharmacyMessage
+    } else if (visiblePharmacies.length === 0) {
+        overlayMessage = pharmacies.length === 0
+            ? "No pharmacies found nearby."
+            : "No pharmacies match your search."
+    }
+
     function openDirections(pharmacy) {
-        const destination = encodeURIComponent(pharmacy.address)
+        const destination = pharmacy.address
+            ? pharmacy.address
+            : `${pharmacy.latitude},${pharmacy.longitude}`
+
         window.open(
-            `https://www.google.com/maps/dir/?api=1&destination=${destination}`,
+            `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`,
             "_blank",
             "noopener,noreferrer"
         )
@@ -129,51 +207,69 @@ function MapPage() {
             </div>
 
             {/* Map Area */}
-            {/* TODO: Swap this placeholder for the real map once the map API is wired up.
-                Pins use the same `visiblePharmacies` / `selectedPharmacy` state. */}
-            <div
-                className={`relative flex-1 min-h-64 rounded-2xl overflow-hidden mb-3 shadow-sm ${
-                    theme === "dark" ? "bg-slate-700" : "bg-blue-50"
-                }`}
-            >
-                <div
-                    className="absolute inset-0 opacity-40"
-                    style={{
-                        backgroundImage:
-                            "linear-gradient(to right, rgba(100,116,139,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(100,116,139,0.35) 1px, transparent 1px)",
-                        backgroundSize: "40px 40px",
-                    }}
-                />
+            {/* The map stays light in dark mode too, like Google's own map. */}
+            <div className="relative flex-1 min-h-64 rounded-2xl overflow-hidden mb-3 shadow-sm bg-blue-50">
+                {useRealMap ? (
+                    <GoogleMap
+                        pharmacies={visiblePharmacies}
+                        selectedId={selectedPharmacy?.id}
+                        origin={pharmacyOrigin}
+                        onSelect={setSelectedId}
+                        onError={handleMapError}
+                    />
+                ) : (
+                    <>
+                        <div
+                            className="absolute inset-0 opacity-40"
+                            style={{
+                                backgroundImage:
+                                    "linear-gradient(to right, rgba(100,116,139,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(100,116,139,0.35) 1px, transparent 1px)",
+                                backgroundSize: "40px 40px",
+                            }}
+                        />
 
-                <p className={`${currentTheme.secondaryText} absolute left-3 top-3 text-xs`}>
-                    Map preview
-                </p>
-
-                {visiblePharmacies.map((pharmacy) => {
-                    const isSelected = pharmacy.id === selectedPharmacy?.id
-
-                    return (
-                        <button
-                            key={pharmacy.id}
-                            onClick={() => setSelectedId(pharmacy.id)}
-                            aria-label={`Select ${pharmacy.name}`}
-                            style={{left: `${pharmacy.x}%`, top: `${pharmacy.y}%`}}
-                            className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center text-white shadow-md ${
-                                isSelected
-                                    ? "w-10 h-10 bg-red-500 ring-4 ring-white/70 z-10"
-                                    : `w-8 h-8 ${currentTheme.primary}`
-                            }`}
-                        >
-                            <Plus className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
-                        </button>
-                    )
-                })}
-
-                {visiblePharmacies.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <p className={`${currentTheme.secondaryText} text-sm`}>
-                            No pharmacies match your search
+                        <p className="absolute left-3 top-3 text-xs text-gray-600">
+                            Map preview
                         </p>
+
+                        {visiblePharmacies.map((pharmacy) => {
+                            const isSelected = pharmacy.id === selectedPharmacy?.id
+
+                            return (
+                                <button
+                                    key={pharmacy.id}
+                                    onClick={() => setSelectedId(pharmacy.id)}
+                                    aria-label={`Select ${pharmacy.name}`}
+                                    style={{left: `${pharmacy.x}%`, top: `${pharmacy.y}%`}}
+                                    className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center text-white shadow-md ${
+                                        isSelected
+                                            ? "w-10 h-10 bg-red-500 ring-4 ring-white/70 z-10"
+                                            : `w-8 h-8 ${currentTheme.primary}`
+                                    }`}
+                                >
+                                    <Plus className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
+                                </button>
+                            )
+                        })}
+                    </>
+                )}
+
+                {overlayMessage && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/10 p-4">
+                        <div className={`${currentTheme.card} max-w-xs rounded-xl p-4 text-center shadow-md`}>
+                            <p className={`${currentTheme.text} text-sm`}>
+                                {overlayMessage}
+                            </p>
+
+                            {hasProblem && (
+                                <button
+                                    onClick={retryPharmacies}
+                                    className={`mt-3 rounded-lg px-4 py-2 text-sm font-semibold text-white ${currentTheme.primary}`}
+                                >
+                                    Try again
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
@@ -187,7 +283,7 @@ function MapPage() {
                                 {selectedPharmacy.name}
                             </h2>
                             <p className={`${currentTheme.secondaryText} text-sm`}>
-                                {selectedPharmacy.address}
+                                {selectedPharmacy.address || "Address unavailable"}
                             </p>
                             <p className={`text-xs mt-1 ${
                                 selectedPharmacy.isOpen
@@ -211,12 +307,14 @@ function MapPage() {
                             Directions
                         </button>
 
-                        <a
-                            href={`tel:${selectedPharmacy.phone}`}
-                            className={`flex-1 py-3 text-center ${currentTheme.border} ${currentTheme.text} border font-semibold rounded-xl`}
-                        >
-                            Call
-                        </a>
+                        {selectedPharmacy.phone && (
+                            <a
+                                href={`tel:${selectedPharmacy.phone.replace(/[^\d+]/g, "")}`}
+                                className={`flex-1 py-3 text-center ${currentTheme.border} ${currentTheme.text} border font-semibold rounded-xl`}
+                            >
+                                Call
+                            </a>
+                        )}
                     </div>
                 </div>
             )}

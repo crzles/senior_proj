@@ -28,3 +28,15 @@ export const listTakenDoses = (doseDate) => apiFetch(`/doses/?dose_date=${doseDa
 // Checks or unchecks one dose and returns {taken, taken_at}.
 export const toggleDose = ({med_id, dose_date, dose_time}) =>
     apiFetch("/doses/toggle", {method: "POST", json: {med_id, dose_date, dose_time}})
+
+export const deleteMedication = (medicationId) =>
+    apiFetch(`/medications/${medicationId}`, {method: "DELETE"})
+
+// /api/medications/{id}/refills  (newest first). Logging a refill also adds its quantity
+// to the medication's pill count on the backend.
+export const listRefills = (medicationId) =>
+    apiFetch(`/medications/${medicationId}/refills/`)
+
+// {qty_added, pharmacy_name?, pharmacy_address?, dosage?}
+export const createRefill = (medicationId, refill) =>
+    apiFetch(`/medications/${medicationId}/refills/`, {method: "POST", json: refill})
