@@ -28,7 +28,7 @@ function getCutoffKey(days) {
 }
 
 function formatEntryDate(entry) {
-    const date = new Date(`${entry.logged_on}T${entry.time || "00:00"}`)
+    const date = new Date(`${entry.date}T${entry.time || "00:00"}`)
 
     return date.toLocaleString("en-US", {
         month: "short",
@@ -72,11 +72,11 @@ function SymptomHistory() {
         if (query !== "") {
             return (
                 entry.symptom.toLowerCase().includes(query) ||
-                entry.note.toLowerCase().includes(query)
+                entry.notes.toLowerCase().includes(query)
             )
         }
 
-        return cutoffKey === null || entry.logged_on >= cutoffKey
+        return cutoffKey === null || entry.date >= cutoffKey
     })
 
     const hasChanges = Object.keys(drafts).length > 0
@@ -86,7 +86,7 @@ function SymptomHistory() {
             symptom: entry.symptom,
             severity: entry.severity,
             duration: entry.duration,
-            note: entry.note,
+            notes: entry.notes,
         }
     }
 
@@ -108,7 +108,7 @@ function SymptomHistory() {
                     ...draft,
                     symptom: draft.symptom.trim(),
                     duration: draft.duration.trim(),
-                    note: draft.note.trim(),
+                    notes: draft.notes.trim(),
                 })
             }
         } catch (error) {
@@ -254,8 +254,8 @@ function SymptomHistory() {
 
                                     <textarea
                                         rows={2}
-                                        value={draft.note}
-                                        onChange={(event) => updateDraft(entry, "note", event.target.value)}
+                                        value={draft.notes}
+                                        onChange={(event) => updateDraft(entry, "notes", event.target.value)}
                                         placeholder="Notes (optional)"
                                         aria-label="Notes"
                                         className={inputClass}
@@ -265,7 +265,7 @@ function SymptomHistory() {
                                 <div className={`${currentTheme.secondaryText} text-sm mt-2`}>
                                     {entry.severity && <p>Self-reported severity: {entry.severity}</p>}
                                     {entry.duration && <p>Duration: {entry.duration}</p>}
-                                    {entry.note && <p>{entry.note}</p>}
+                                    {entry.notes && <p>{entry.notes}</p>}
                                 </div>
                             )}
 

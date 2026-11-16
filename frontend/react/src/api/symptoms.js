@@ -1,16 +1,15 @@
 import {apiFetch} from "./client"
 
-// /api/symptoms  (the shared list of symptom names)
-export const listSymptoms = () => apiFetch("/symptoms/")
+// /api/symptoms  (the user's own symptom log entries)
+export const listSymptomLogs = () => apiFetch("/symptoms/")
 
-export const createSymptom = (name) =>
-    apiFetch("/symptoms/", {method: "POST", json: {name}})
-
-// /api/symptoms/logs  (the user's own entries)
-export const listSymptomLogs = () => apiFetch("/symptoms/logs")
-
+// {symptom, date, time, severity, duration, notes}
 export const createSymptomLog = (log) =>
-    apiFetch("/symptoms/logs", {method: "POST", json: log})
+    apiFetch("/symptoms/", {method: "POST", json: log})
+
+// Only symptom, severity, duration and notes can be edited.
+export const updateSymptomLog = (logId, changes) =>
+    apiFetch(`/symptoms/${logId}`, {method: "PATCH", json: changes})
 
 export const deleteSymptomLog = (logId) =>
-    apiFetch(`/symptoms/logs/${logId}`, {method: "DELETE"})
+    apiFetch(`/symptoms/${logId}`, {method: "DELETE"})

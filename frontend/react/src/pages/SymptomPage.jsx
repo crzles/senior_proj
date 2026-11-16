@@ -21,7 +21,7 @@ const emptyForm = {
     time: "",
     severity: "",
     duration: "",
-    note: "",
+    notes: "",
 }
 
 function SymptomPage() {
@@ -52,11 +52,11 @@ function SymptomPage() {
         try {
             await addSymptomEntry({
                 symptom: form.symptom.trim(),
-                logged_on: form.date,
+                date: form.date,
                 time: form.time,
                 severity: form.severity,
                 duration: form.duration.trim(),
-                note: form.note.trim(),
+                notes: form.notes.trim(),
             })
         } catch (saveError) {
             setError(saveError.message)
@@ -107,7 +107,7 @@ function SymptomPage() {
                         id="symptom"
                         type="text"
                         list="symptom-options"
-                        maxLength={50}
+                        maxLength={100}
                         value={form.symptom}
                         onChange={(event) => updateField("symptom", event.target.value)}
                         placeholder="Choose or type a symptom"
@@ -214,8 +214,8 @@ function SymptomPage() {
                     <textarea
                         id="symptom-notes"
                         rows={3}
-                        value={form.note}
-                        onChange={(event) => updateField("note", event.target.value)}
+                        value={form.notes}
+                        onChange={(event) => updateField("notes", event.target.value)}
                         placeholder="Add any details you want to record"
                         className={inputClass}
                     />
