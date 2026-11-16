@@ -1,7 +1,9 @@
 import {useState} from "react"
-import {useNavigate} from "react-router-dom"
+import ProfileMenu from "../components/ProfileMenu"
 import {useDemo} from "../context/DemoContext"
 import {useTheme} from "../context/ThemeContext"
+import {Plus, Search} from "lucide-react"
+import BottomNav from "../components/BottomNav"
 
 const filters = ["All", "Open now", "24 hours"]
 
@@ -42,9 +44,8 @@ function MapPage() {
     const [activeFilter, setActiveFilter] = useState("All")
     const [selectedId, setSelectedId] = useState(null)
 
-    const navigate = useNavigate()
     // TODO: Replace demoPharmacies with pharmacies from the backend once the endpoint exists.
-    const {demoUser, demoPharmacies} = useDemo()
+    const {demoPharmacies} = useDemo()
     const {theme, currentTheme} = useTheme()
 
     const now = new Date()
@@ -94,21 +95,12 @@ function MapPage() {
                     </h1>
                 </div>
 
-                {/* Profile Button */}
-                <button
-                    onClick={() => navigate("/profile")}
-                    aria-label="Open profile"
-                    className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
-                >
-                    {demoUser
-                        ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
-                        : "?"}
-                </button>
+                <ProfileMenu />
             </div>
 
             {/* Search */}
             <div className={`${currentTheme.card} ${currentTheme.border} border rounded-xl px-3 py-2 mb-3 flex items-center gap-2 shadow-sm`}>
-                <span className={currentTheme.secondaryText} aria-hidden="true">🔍</span>
+                <Search className={`h-4 w-4 ${currentTheme.secondaryText}`} aria-hidden="true" />
                 <input
                     type="text"
                     value={search}
@@ -172,7 +164,7 @@ function MapPage() {
                                     : `w-8 h-8 ${currentTheme.primary}`
                             }`}
                         >
-                            <span aria-hidden="true">+</span>
+                            <Plus className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
                         </button>
                     )
                 })}
@@ -230,55 +222,7 @@ function MapPage() {
             )}
 
             {/* Bottom Navigation */}
-            <nav className={`fixed bottom-0 left-0 right-0 ${currentTheme.card} border-t ${currentTheme.border} px-2 py-2`}>
-
-                <div className="flex justify-around">
-
-                    <button
-                        onClick={() => navigate("/home")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">⌂</span>
-                        Home
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/MedPage")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">💊</span>
-                        My Medications
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/map")}
-                        aria-current="page"
-                        className={`flex flex-col items-center ${currentTheme.text} font-semibold text-xs`}>
-                        <span className="text-lg">📍</span>
-                        Map
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/symptoms")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">📝</span>
-                        Symptoms
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/coming-soon")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">📅</span>
-                        Calendar
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/profile")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">👤</span>
-                        Profile
-                    </button>
-
-                </div>
-            </nav>
+            <BottomNav />
 
         </div>
     )

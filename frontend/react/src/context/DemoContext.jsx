@@ -1,23 +1,54 @@
-import {createContext, useContext, useState} from "react"
+import {createContext, useContext, useMemo, useState} from "react"
+import {getDoseKey, useBackendData} from "./useBackendData"
 
 const DemoContext = createContext()
 
-export function DemoProvider({children}) {
-    const [demoMode, setDemoMode] = useState(true)
-    const demoUserData = {
-        firstName: "Rollie",
-        lastName: "Pollie",
-        email: "demo@pillbug.com",
+const emptyHabits = {smoking: "", alcohol: "", activity_days: "", sleep_hours: ""}
+
+// TODO: The backend has no table for health habits yet (see the TODO in models/health.py).
+// Until it does, signed-in users' answers are remembered in this browser, per user.
+const habitsKey = (userId) => `pillbug-health-habits-${userId}`
+
+function readStoredHabits(userId) {
+    if (!userId) {
+        return emptyHabits
     }
 
-    const demoUser = demoMode ? demoUserData : null
+    try {
+        return {...emptyHabits, ...JSON.parse(localStorage.getItem(habitsKey(userId)))}
+    } catch {
+        return emptyHabits
+    }
+}
+
+export function DemoProvider({children}) {
+    // Demo mode shows sample data for testing. When it is off, everything comes from the
+    // backend. Set VITE_DEMO_MODE=true in frontend/react/.env.local to turn it on.
+    const [demoMode, setDemoMode] = useState(import.meta.env.VITE_DEMO_MODE === "true")
+    const backend = useBackendData(!demoMode)
+    const [demoUserEdits, setDemoUserEdits] = useState({})
+    const [savedHabits, setSavedHabits] = useState(null)
+    const storedHabits = useMemo(() => readStoredHabits(backend.user?.id), [backend.user?.id])
+    const demoUserData = {
+        id: 1,
+        first_name: "Rollie",
+        last_name: "Pollie",
+        email: "demo@pillbug.com",
+        d_o_b: "2026-09-26", // the day the project started
+    }
+
+    const demoUser = demoMode ? {...demoUserData, ...demoUserEdits} : backend.user
 
     const demoMedicationData = [
     {
         id: 1,
+        user_id: 1,
+        label_set_id: null,
         med_name: "Ibuprofen",
         med_type: "Medication",
         dosage: "200 mg",
+        route: "oral",
+        is_otc: true,
         pills_per_dose: 1,
         recurrence: "Once daily",
         reminder_times: ["08:00"],
@@ -36,12 +67,17 @@ export function DemoProvider({children}) {
         requirements: "",
         avoid_notes: "",
         storage_notes: "",
+        created_at: "2026-10-01T00:00:00Z",
     },
     {
         id: 2,
+        user_id: 1,
+        label_set_id: null,
         med_name: "Vitamin D",
         med_type: "Supplement",
         dosage: "1000 IU",
+        route: "oral",
+        is_otc: true,
         pills_per_dose: 1,
         recurrence: "Once daily",
         reminder_times: ["23:59"],
@@ -109,13 +145,90 @@ const demoPharmacies = demoMode ? demoPharmacyData : []
 
 // User-added medications are always kept; the sample medications only appear in demo mode.
 const [medications, setMedications] = useState([])
-const [doseLogs, setDoseLogs] = useState({})
-const [symptomLogs, setSymptomLogs] = useState([])
+const [demoDoseLogs, setDoseLogs] = useState({})
+// Matches the backend: a shared list of symptom names (symptoms table) and logs that
+// point at it by symptom_id (symptom_logs table). time, severity, duration and logged_at
+// are frontend-only for now; the backend has no columns for them yet.
+const baseSymptoms = [
+    "Headache",
+    "Nausea",
+    "Dizziness",
+    "Fatigue",
+    "Fever",
+    "Cough",
+    "Stomach pain",
+    "Rash",
+    "Shortness of breath",
+].map((name, index) => ({id: index + 1, name}))
+
+const [customSymptoms, setCustomSymptoms] = useState([])
+const [userSymptomLogs, setUserSymptomLogs] = useState([])
+
+// Edits and deletes are stored by id so they apply to both sample and user-added logs.
+const [symptomEdits, setSymptomEdits] = useState({})
+const [deletedSymptomIds, setDeletedSymptomIds] = useState([])
+
+const demoSymptoms = [...baseSymptoms, ...customSymptoms]
+
+function getDemoDateKey(daysAgo) {
+    const date = new Date()
+    date.setDate(date.getDate() - daysAgo)
+
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+
+    return `${date.getFullYear()}-${month}-${day}`
+}
+
+// Sample symptom logs (dates are relative to today), only shown in demo mode.
+const demoSymptomLogData = [
+    {
+        id: 1,
+        user_id: 1,
+        symptom_id: 1,
+        med_id: null,
+        logged_on: getDemoDateKey(0),
+        note: "Felt it after skipping breakfast.",
+        time: "08:30",
+        severity: "Mild",
+        duration: "30 minutes",
+        logged_at: new Date(`${getDemoDateKey(0)}T08:30`).toISOString(),
+    },
+    {
+        id: 2,
+        user_id: 1,
+        symptom_id: 2,
+        med_id: null,
+        logged_on: getDemoDateKey(7),
+        note: "Felt queasy after dinner.",
+        time: "19:15",
+        severity: "Moderate",
+        duration: "20 minutes",
+        logged_at: new Date(`${getDemoDateKey(7)}T19:15`).toISOString(),
+    },
+]
+
+// Each log also carries `symptom` (the name) so pages don't have to look it up.
+const demoSymptomLogs = (
+    demoMode
+        ? [...userSymptomLogs, ...demoSymptomLogData]
+        : userSymptomLogs
+)
+    .filter((log) => !deletedSymptomIds.includes(log.id))
+    .map((log) => ({
+        ...log,
+        ...symptomEdits[log.id],
+    }))
+    .map((log) => ({
+        ...log,
+        symptom: demoSymptoms.find((item) => item.id === log.symptom_id)?.name || "",
+    }))
+    .sort((a, b) => `${b.logged_on}T${b.time}`.localeCompare(`${a.logged_on}T${a.time}`))
 
 // Edits are stored by id so they apply to both sample and user-added medications.
 const [medicationEdits, setMedicationEdits] = useState({})
 
-const demoMedications = (
+const sampleMedications = (
     demoMode
         ? [...demoMedicationData, ...medications]
         : medications
@@ -124,17 +237,7 @@ const demoMedications = (
     ...medicationEdits[medication.id],
 }))
 
-function getDoseKey(medicationId, time, date = new Date()) {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-
-    const dateKey = `${year}-${month}-${day}`
-
-    return `${medicationId}|${dateKey}|${time}`
-}
-
-function toggleDoseTaken(doseKey) {
+function toggleDemoDoseTaken(doseKey) {
     setDoseLogs((currentLogs) => {
         const updatedLogs = {...currentLogs}
 
@@ -148,43 +251,66 @@ function toggleDoseTaken(doseKey) {
     })
 }
 
-function addMedication(medication) {
+function addDemoMedication(medication) {
     setMedications((currentMedications) => [
         ...currentMedications,
         {
             ...medication,
             id: Date.now(),
-            added_at: new Date().toISOString(),
+            user_id: 1,
+            created_at: new Date().toISOString(),
         },
     ])
 }
 
-function addSymptomEntry(entry) {
-    setSymptomLogs((currentLogs) => [
+// Finds a symptom by name or adds it to the list (like POST /api/symptoms/), returning its id.
+function getSymptomId(name) {
+    const trimmed = name.trim()
+    const existing = demoSymptoms.find(
+        (item) => item.name.toLowerCase() === trimmed.toLowerCase()
+    )
+
+    if (existing) {
+        return existing.id
+    }
+
+    const created = {id: Date.now(), name: trimmed}
+    setCustomSymptoms((current) => [...current, created])
+
+    return created.id
+}
+
+// `entry` uses the symptom's name; it is stored as symptom_id.
+function addDemoSymptomEntry({symptom, ...entry}) {
+    setUserSymptomLogs((currentLogs) => [
+        ...currentLogs,
         {
             ...entry,
             id: Date.now(),
+            user_id: 1,
+            symptom_id: getSymptomId(symptom),
+            med_id: null,
             logged_at: new Date().toISOString(),
         },
-        ...currentLogs,
     ])
 }
 
-function updateSymptomEntry(entryId, changes) {
-    setSymptomLogs((currentLogs) =>
-        currentLogs.map((entry) =>
-            entry.id === entryId ? {...entry, ...changes} : entry
-        )
-    )
+function updateDemoSymptomEntry(entryId, {symptom, ...changes}) {
+    setSymptomEdits((currentEdits) => ({
+        ...currentEdits,
+        [entryId]: {
+            ...currentEdits[entryId],
+            ...changes,
+            ...(symptom !== undefined && {symptom_id: getSymptomId(symptom)}),
+        },
+    }))
 }
 
-function deleteSymptomEntry(entryId) {
-    setSymptomLogs((currentLogs) =>
-        currentLogs.filter((entry) => entry.id !== entryId)
-    )
+function deleteDemoSymptomEntry(entryId) {
+    setDeletedSymptomIds((currentIds) => [...currentIds, entryId])
 }
 
-function updateMedication(medicationId, changes) {
+function updateDemoMedication(medicationId, changes) {
     setMedicationEdits((currentEdits) => ({
         ...currentEdits,
         [medicationId]: {
@@ -194,16 +320,99 @@ function updateMedication(medicationId, changes) {
     }))
 }
 
+// The pages use these. With demo mode on they work on the sample data above;
+// with it off they call the backend, and the page shows any error it throws.
+async function toggleDoseTaken(doseKey) {
+    if (demoMode) {
+        toggleDemoDoseTaken(doseKey)
+        return
+    }
+
+    try {
+        await backend.toggleDoseTaken(doseKey)
+    } catch (error) {
+        alert(error.message)
+    }
+}
+
+const addMedication = (medication) =>
+    demoMode ? addDemoMedication(medication) : backend.addMedication(medication)
+
+const updateMedication = (medicationId, changes) =>
+    demoMode ? updateDemoMedication(medicationId, changes) : backend.updateMedication(medicationId, changes)
+
+const addSymptomEntry = async (entry) =>
+    demoMode ? addDemoSymptomEntry(entry) : backend.addSymptomEntry(entry)
+
+const updateSymptomEntry = async (entryId, changes) =>
+    demoMode ? updateDemoSymptomEntry(entryId, changes) : backend.updateSymptomEntry(entryId, changes)
+
+const deleteSymptomEntry = async (entryId) =>
+    demoMode ? deleteDemoSymptomEntry(entryId) : backend.deleteSymptomEntry(entryId)
+
+// TODO: The backend can't save profile changes or passwords yet (PATCH /api/users/me and a
+// change-password route are listed as future work). Once they exist, call them in the
+// non-demo branch below.
+const NOT_AVAILABLE = "This isn't available yet. The backend doesn't support it."
+
+async function updateProfile(changes) {
+    if (!demoMode) {
+        throw new Error(NOT_AVAILABLE)
+    }
+
+    setDemoUserEdits((current) => ({...current, ...changes}))
+}
+
+async function changePassword() {
+    if (!demoMode) {
+        throw new Error(NOT_AVAILABLE)
+    }
+
+    // Demo mode has no password to change.
+}
+
+const healthHabits = savedHabits || storedHabits
+
+async function updateHealthHabits(habits) {
+    const next = {...emptyHabits, ...habits}
+
+    setSavedHabits(next)
+
+    if (!demoMode && backend.user) {
+        try {
+            localStorage.setItem(habitsKey(backend.user.id), JSON.stringify(next))
+        } catch {
+            throw new Error("Couldn't save on this device. Please check your browser settings.")
+        }
+    }
+}
+
+function signOut() {
+    if (!demoMode) {
+        backend.signOut()
+    }
+}
+
     return (
         <DemoContext.Provider
             value={{
                 demoMode,
                 setDemoMode,
                 demoUser,
-                demoMedications,
+                isAuthenticated: demoMode || Boolean(backend.user),
+                authLoading: !demoMode && backend.authLoading,
+                signIn: backend.signIn,
+                signUp: backend.signUp,
+                signOut,
+                healthHabits,
+                updateHealthHabits,
+                updateProfile,
+                changePassword,
+                demoMedications: demoMode ? sampleMedications : backend.medications,
                 demoPharmacies,
-                doseLogs,
-                symptomLogs,
+                doseLogs: demoMode ? demoDoseLogs : backend.doseLogs,
+                symptoms: demoMode ? demoSymptoms : backend.symptoms,
+                symptomLogs: demoMode ? demoSymptomLogs : backend.symptomLogs,
                 addSymptomEntry,
                 updateSymptomEntry,
                 deleteSymptomEntry,
