@@ -21,6 +21,30 @@ function readStoredHabits(userId) {
     }
 }
 
+// A sample drug label for the demo Ibuprofen, shaped like the backend's /api/drugs/{set_id}.
+// The text is a short demo summary, not real label data.
+const demoDrugLabels = {
+    "demo-ibuprofen": {
+        set_id: "demo-ibuprofen",
+        med_name: "Ibuprofen",
+        generic_name: "Ibuprofen",
+        purpose: "Pain reliever / fever reducer",
+        indications: "Temporarily relieves minor aches and pains due to headache, muscular aches, backache, the common cold, toothache and menstrual cramps. Temporarily reduces fever. (Demo sample text.)",
+        dosage: "Adults: take 1 tablet every 4 to 6 hours while symptoms last. Do not exceed the amount on the package. (Demo sample text.)",
+        storage: "Store at room temperature and avoid excessive heat and humidity. (Demo sample text.)",
+        warnings: "Ibuprofen may cause stomach bleeding, especially if you take other pain relievers, blood thinners or steroids, have had stomach ulcers, or drink three or more alcoholic drinks a day. Ask a doctor before use if you have heart disease, high blood pressure or kidney disease. (Demo sample text.)",
+        boxed_warning: null,
+        last_updated: "2025-01-15T00:00:00Z",
+    },
+}
+
+// Where the demo user "is" (downtown Springfield, IL), so the real map has somewhere to centre.
+// (Module level so the same object is reused and the map is not redrawn on every render.)
+const demoOrigin = {lat: 39.799, lng: -89.644}
+
+// Demo mode keeps its refills in memory, so there is nothing to load.
+const noopLoadRefills = () => {}
+
 export function DemoProvider({children}) {
     // Demo mode shows sample data for testing. When it is off, everything comes from the
     // backend. Set VITE_DEMO_MODE=true in frontend/react/.env.local to turn it on.
@@ -28,6 +52,19 @@ export function DemoProvider({children}) {
     const backend = useBackendData(!demoMode)
     const [demoUserEdits, setDemoUserEdits] = useState({})
     const [savedHabits, setSavedHabits] = useState(null)
+    const [deletedMedicationIds, setDeletedMedicationIds] = useState([])
+    // medication id -> refills, newest first. Ibuprofen starts with one from two weeks ago.
+    const [demoRefills, setDemoRefills] = useState(() => ({
+        1: [{
+            id: 1,
+            med_id: 1,
+            refilled_at: new Date(`${getDemoDateKey(14)}T10:00`).toISOString(),
+            qty_added: 30,
+            dosage: "200 mg",
+            pharmacy_name: "Maplewood Pharmacy",
+            pharmacy_address: "123 Maple Street, Springfield",
+        }],
+    }))
     const storedHabits = useMemo(() => readStoredHabits(backend.user?.id), [backend.user?.id])
     const demoUserData = {
         id: 1,
@@ -43,7 +80,7 @@ export function DemoProvider({children}) {
     {
         id: 1,
         user_id: 1,
-        label_set_id: null,
+        label_set_id: "demo-ibuprofen",
         med_name: "Ibuprofen",
         med_type: "Medication",
         dosage: "200 mg",
@@ -61,9 +98,9 @@ export function DemoProvider({children}) {
         custom_times: [],
         start_date: "2026-10-01",
         end_date: null,
-        is_refillable: false,
-        pill_qty: null,
-        refill_reminder: null,
+        is_refillable: true,
+        pill_qty: 30,
+        refill_reminder: 5,
         requirements: "",
         avoid_notes: "",
         storage_notes: "",
@@ -112,6 +149,8 @@ const demoPharmacyData = [
         closes: "21:00",
         phone: "555-0101",
         is24Hours: false,
+        latitude: 39.8035,
+        longitude: -89.6395,
         x: 62,
         y: 38,
     },
@@ -124,6 +163,8 @@ const demoPharmacyData = [
         closes: null,
         phone: "555-0102",
         is24Hours: true,
+        latitude: 39.795,
+        longitude: -89.654,
         x: 28,
         y: 52,
     },
@@ -136,6 +177,8 @@ const demoPharmacyData = [
         closes: "17:00",
         phone: "555-0103",
         is24Hours: false,
+        latitude: 39.789,
+        longitude: -89.633,
         x: 74,
         y: 72,
     },
@@ -219,12 +262,26 @@ const sampleMedications = (
     demoMode
         ? [...demoMedicationData, ...medications]
         : medications
-).map((medication) => ({
+).filter((medication) => !deletedMedicationIds.includes(medication.id)).map((medication) => ({
     ...medication,
     ...medicationEdits[medication.id],
 }))
 
 function toggleDemoDoseTaken(doseKey) {
+    // Like the backend, checking a dose takes the pills off the count and unchecking puts them back.
+    const [medicationId] = doseKey.split("|")
+    const medication = sampleMedications.find((item) => String(item.id) === medicationId)
+
+    if (medication && medication.pill_qty != null) {
+        const change = demoDoseLogs[doseKey] ? 1 : -1
+        const pills = Math.round((medication.pill_qty + change * medication.pills_per_dose) * 100) / 100
+
+        setMedicationEdits((currentEdits) => ({
+            ...currentEdits,
+            [medication.id]: {...currentEdits[medication.id], pill_qty: pills},
+        }))
+    }
+
     setDoseLogs((currentLogs) => {
         const updatedLogs = {...currentLogs}
 
@@ -320,6 +377,41 @@ const deleteSymptomEntry = async (entryId) =>
 // non-demo branch below.
 const NOT_AVAILABLE = "This isn't available yet. The backend doesn't support it."
 
+function deleteDemoMedication(medicationId) {
+    setDeletedMedicationIds((currentIds) => [...currentIds, medicationId])
+}
+
+// Logging a refill adds its quantity to the pill count, like the backend does.
+function addDemoRefill(medicationId, refill) {
+    const created = {
+        ...refill,
+        id: Date.now(),
+        med_id: medicationId,
+        refilled_at: new Date().toISOString(),
+    }
+
+    setDemoRefills((current) => ({
+        ...current,
+        [medicationId]: [created, ...(current[medicationId] || [])],
+    }))
+
+    const medication = sampleMedications.find((item) => item.id === medicationId)
+
+    setMedicationEdits((currentEdits) => ({
+        ...currentEdits,
+        [medicationId]: {
+            ...currentEdits[medicationId],
+            pill_qty: (medication?.pill_qty || 0) + refill.qty_added,
+        },
+    }))
+}
+
+const deleteMedication = async (medicationId) =>
+    demoMode ? deleteDemoMedication(medicationId) : backend.deleteMedication(medicationId)
+
+const addRefill = async (medicationId, refill) =>
+    demoMode ? addDemoRefill(medicationId, refill) : backend.addRefill(medicationId, refill)
+
 async function updateProfile(changes) {
     if (!demoMode) {
         throw new Error(NOT_AVAILABLE)
@@ -370,11 +462,21 @@ function signOut() {
                 signUp: backend.signUp,
                 signOut,
                 healthHabits,
+                demoDrugLabels,
+                refills: demoMode ? demoRefills : backend.refills,
+                loadRefills: demoMode ? noopLoadRefills : backend.loadRefills,
+                addRefill,
+                deleteMedication,
                 updateHealthHabits,
                 updateProfile,
                 changePassword,
                 demoMedications: demoMode ? sampleMedications : backend.medications,
-                demoPharmacies,
+                pharmacies: demoMode ? demoPharmacies : backend.pharmacies,
+                pharmacyStatus: demoMode ? "ready" : backend.pharmacyStatus,
+                pharmacyMessage: backend.pharmacyMessage,
+                pharmacyOrigin: demoMode ? demoOrigin : backend.pharmacyOrigin,
+                loadPharmacies: backend.loadPharmacies,
+                retryPharmacies: backend.retryPharmacies,
                 doseLogs: demoMode ? demoDoseLogs : backend.doseLogs,
                 symptoms,
                 symptomLogs: demoMode ? demoSymptomLogs : backend.symptomLogs,
