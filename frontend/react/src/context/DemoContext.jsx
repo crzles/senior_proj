@@ -146,10 +146,8 @@ const demoPharmacies = demoMode ? demoPharmacyData : []
 // User-added medications are always kept; the sample medications only appear in demo mode.
 const [medications, setMedications] = useState([])
 const [demoDoseLogs, setDoseLogs] = useState({})
-// Matches the backend: a shared list of symptom names (symptoms table) and logs that
-// point at it by symptom_id (symptom_logs table). time, severity, duration and logged_at
-// are frontend-only for now; the backend has no columns for them yet.
-const baseSymptoms = [
+// Suggestions for the symptom field. The backend stores the name as typed on each entry.
+const symptoms = [
     "Headache",
     "Nausea",
     "Dizziness",
@@ -161,14 +159,12 @@ const baseSymptoms = [
     "Shortness of breath",
 ].map((name, index) => ({id: index + 1, name}))
 
-const [customSymptoms, setCustomSymptoms] = useState([])
+// Matches the backend's symptom log: symptom, date, time, severity, duration, notes, logged_at.
 const [userSymptomLogs, setUserSymptomLogs] = useState([])
 
 // Edits and deletes are stored by id so they apply to both sample and user-added logs.
 const [symptomEdits, setSymptomEdits] = useState({})
 const [deletedSymptomIds, setDeletedSymptomIds] = useState([])
-
-const demoSymptoms = [...baseSymptoms, ...customSymptoms]
 
 function getDemoDateKey(daysAgo) {
     const date = new Date()
@@ -184,31 +180,26 @@ function getDemoDateKey(daysAgo) {
 const demoSymptomLogData = [
     {
         id: 1,
-        user_id: 1,
-        symptom_id: 1,
-        med_id: null,
-        logged_on: getDemoDateKey(0),
-        note: "Felt it after skipping breakfast.",
+        symptom: "Headache",
+        date: getDemoDateKey(0),
         time: "08:30",
         severity: "Mild",
         duration: "30 minutes",
+        notes: "Felt it after skipping breakfast.",
         logged_at: new Date(`${getDemoDateKey(0)}T08:30`).toISOString(),
     },
     {
         id: 2,
-        user_id: 1,
-        symptom_id: 2,
-        med_id: null,
-        logged_on: getDemoDateKey(7),
-        note: "Felt queasy after dinner.",
+        symptom: "Nausea",
+        date: getDemoDateKey(7),
         time: "19:15",
         severity: "Moderate",
         duration: "20 minutes",
+        notes: "Felt queasy after dinner.",
         logged_at: new Date(`${getDemoDateKey(7)}T19:15`).toISOString(),
     },
 ]
 
-// Each log also carries `symptom` (the name) so pages don't have to look it up.
 const demoSymptomLogs = (
     demoMode
         ? [...userSymptomLogs, ...demoSymptomLogData]
@@ -219,11 +210,7 @@ const demoSymptomLogs = (
         ...log,
         ...symptomEdits[log.id],
     }))
-    .map((log) => ({
-        ...log,
-        symptom: demoSymptoms.find((item) => item.id === log.symptom_id)?.name || "",
-    }))
-    .sort((a, b) => `${b.logged_on}T${b.time}`.localeCompare(`${a.logged_on}T${a.time}`))
+    .sort((a, b) => `${b.date}T${b.time}`.localeCompare(`${a.date}T${a.time}`))
 
 // Edits are stored by id so they apply to both sample and user-added medications.
 const [medicationEdits, setMedicationEdits] = useState({})
@@ -263,45 +250,23 @@ function addDemoMedication(medication) {
     ])
 }
 
-// Finds a symptom by name or adds it to the list (like POST /api/symptoms/), returning its id.
-function getSymptomId(name) {
-    const trimmed = name.trim()
-    const existing = demoSymptoms.find(
-        (item) => item.name.toLowerCase() === trimmed.toLowerCase()
-    )
-
-    if (existing) {
-        return existing.id
-    }
-
-    const created = {id: Date.now(), name: trimmed}
-    setCustomSymptoms((current) => [...current, created])
-
-    return created.id
-}
-
-// `entry` uses the symptom's name; it is stored as symptom_id.
-function addDemoSymptomEntry({symptom, ...entry}) {
+function addDemoSymptomEntry(entry) {
     setUserSymptomLogs((currentLogs) => [
         ...currentLogs,
         {
             ...entry,
             id: Date.now(),
-            user_id: 1,
-            symptom_id: getSymptomId(symptom),
-            med_id: null,
             logged_at: new Date().toISOString(),
         },
     ])
 }
 
-function updateDemoSymptomEntry(entryId, {symptom, ...changes}) {
+function updateDemoSymptomEntry(entryId, changes) {
     setSymptomEdits((currentEdits) => ({
         ...currentEdits,
         [entryId]: {
             ...currentEdits[entryId],
             ...changes,
-            ...(symptom !== undefined && {symptom_id: getSymptomId(symptom)}),
         },
     }))
 }
@@ -411,7 +376,7 @@ function signOut() {
                 demoMedications: demoMode ? sampleMedications : backend.medications,
                 demoPharmacies,
                 doseLogs: demoMode ? demoDoseLogs : backend.doseLogs,
-                symptoms: demoMode ? demoSymptoms : backend.symptoms,
+                symptoms,
                 symptomLogs: demoMode ? demoSymptomLogs : backend.symptomLogs,
                 addSymptomEntry,
                 updateSymptomEntry,

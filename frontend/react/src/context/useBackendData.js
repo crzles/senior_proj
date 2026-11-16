@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from "react"
+import {useEffect, useState} from "react"
 import * as authApi from "../api/auth"
 import {clearToken, getToken, onUnauthorized} from "../api/client"
 import * as medicationApi from "../api/medications"
@@ -21,14 +21,12 @@ const MEDICATION_FIELDS = [
     "pill_qty", "requirements", "avoid_notes", "storage_notes", "label_set_id",
 ]
 
-// Schedule options the backend has no columns for yet.
+// Schedule options the medication API doesn't accept yet. (The medications table has
+// columns for them, but the request and response schemas don't include them.)
 const MEDICATION_EXTRA_FIELDS = [
     "schedule_type", "interval_hours", "interval_days", "first_dose_time",
     "weekly_day", "custom_days", "custom_times",
 ]
-
-// Symptom details the backend has no columns for yet.
-const SYMPTOM_EXTRA_FIELDS = ["time", "severity", "duration"]
 
 function pick(object, keys) {
     return keys.reduce((result, key) => {
@@ -40,8 +38,8 @@ function pick(object, keys) {
     }, {})
 }
 
-// "Extras" are the details the backend can't store yet. They are kept in this browser,
-// per user, and merged back in when the data loads. Remove once the backend has the columns.
+// "Extras" are the details the backend can't take yet. They are kept in this browser,
+// per user, and merged back in when the data loads. Remove once the API accepts them.
 function extrasKey(userId, kind) {
     return `pillbug-${kind}-extras-${userId}`
 }
@@ -54,24 +52,16 @@ function readExtras(userId, kind) {
     }
 }
 
-function writeExtras(userId, kind, extras) {
+function saveExtra(userId, kind, id, value) {
+    const extras = readExtras(userId, kind)
+
+    extras[id] = {...extras[id], ...value}
+
     try {
         localStorage.setItem(extrasKey(userId, kind), JSON.stringify(extras))
     } catch {
         // Storage is blocked; the extra details just won't be remembered.
     }
-}
-
-function saveExtra(userId, kind, id, value) {
-    const extras = readExtras(userId, kind)
-
-    if (value) {
-        extras[id] = {...extras[id], ...value}
-    } else {
-        delete extras[id]
-    }
-
-    writeExtras(userId, kind, extras)
 }
 
 function toFrontendMedication(medication, reminders, extras = {}) {
@@ -99,7 +89,7 @@ function toFrontendMedication(medication, reminders, extras = {}) {
     }
 }
 
-async function loadMedicationData(userId) {
+async function loadMedications(userId) {
     const medications = await medicationApi.listMedications()
 
     const reminderLists = await Promise.all(
@@ -108,66 +98,32 @@ async function loadMedicationData(userId) {
 
     const extras = readExtras(userId, "medication")
 
-    // reminder id -> which medication and time it belongs to, used to match doses below.
-    const reminderLookup = {}
-
-    medications.forEach((medication, index) => {
-        reminderLists[index].forEach((reminder) => {
-            reminderLookup[reminder.id] = {
-                medId: medication.id,
-                time: reminder.dose_time.slice(0, 5),
-            }
-        })
-    })
-
-    return {
-        medications: medications.map((medication, index) =>
-            toFrontendMedication(medication, reminderLists[index], extras[medication.id])
-        ),
-        reminderLookup,
-    }
+    return medications.map((medication, index) =>
+        toFrontendMedication(medication, reminderLists[index], extras[medication.id])
+    )
 }
 
-async function loadDoses(reminderLookup) {
-    const doses = await medicationApi.listTodayDoses()
+// Today's doses that were marked as taken, keyed like the demo data: key -> taken_at.
+async function loadTakenDoses() {
+    const now = new Date()
+    const month = String(now.getMonth() + 1).padStart(2, "0")
+    const day = String(now.getDate()).padStart(2, "0")
+
+    const taken = await medicationApi.listTakenDoses(`${now.getFullYear()}-${month}-${day}`)
     const logs = {}
-    const ids = {}
 
-    doses.forEach((dose) => {
-        const reminder = reminderLookup[dose.reminder_id]
-
-        if (!reminder) {
-            return
-        }
-
-        const key = getDoseKey(reminder.medId, reminder.time)
-
-        ids[key] = dose.id
-
-        if (dose.status === "taken") {
-            logs[key] = dose.taken_at
-        }
+    taken.forEach((dose) => {
+        logs[getDoseKey(dose.med_id, dose.dose_time)] = dose.taken_at
     })
 
-    return {logs, ids}
+    return logs
 }
 
-function toFrontendSymptomLog(log, symptoms, extras = {}) {
+function toFrontendSymptomLog(log) {
     return {
         ...log,
-        note: log.note || "",
-        symptom: symptoms.find((symptom) => symptom.id === log.symptom_id)?.name || "",
-        time: "",
-        severity: "",
-        duration: "",
-        ...extras,
+        time: log.time.slice(0, 5),
     }
-}
-
-function sortSymptomLogs(logs) {
-    return [...logs].sort((a, b) =>
-        `${b.logged_on}T${b.time || "00:00"}`.localeCompare(`${a.logged_on}T${a.time || "00:00"}`)
-    )
 }
 
 // Signs the user in and loads everything from the backend. Used when demo mode is off.
@@ -175,17 +131,13 @@ export function useBackendData(enabled) {
     const [user, setUser] = useState(null)
     const [authLoading, setAuthLoading] = useState(() => enabled && Boolean(getToken()))
     const [medications, setMedications] = useState([])
-    const [doses, setDoses] = useState({logs: {}, ids: {}})
-    const [symptoms, setSymptoms] = useState([])
+    const [doseLogs, setDoseLogs] = useState({})
     const [symptomLogs, setSymptomLogs] = useState([])
-
-    const reminderLookup = useRef({})
 
     function resetData() {
         setUser(null)
         setMedications([])
-        setDoses({logs: {}, ids: {}})
-        setSymptoms([])
+        setDoseLogs({})
         setSymptomLogs([])
     }
 
@@ -240,35 +192,19 @@ export function useBackendData(enabled) {
 
         let cancelled = false
 
-        async function load() {
-            const medicationData = await loadMedicationData(user.id)
-            reminderLookup.current = medicationData.reminderLookup
+        Promise.all([loadMedications(user.id), loadTakenDoses(), symptomApi.listSymptomLogs()])
+            .then(([medicationList, takenDoses, logs]) => {
+                if (cancelled) {
+                    return
+                }
 
-            const [doseData, symptomList, logList] = await Promise.all([
-                loadDoses(medicationData.reminderLookup),
-                symptomApi.listSymptoms(),
-                symptomApi.listSymptomLogs(),
-            ])
-
-            if (cancelled) {
-                return
-            }
-
-            const symptomExtras = readExtras(user.id, "symptom")
-
-            setMedications(medicationData.medications)
-            setDoses(doseData)
-            setSymptoms(symptomList)
-            setSymptomLogs(
-                sortSymptomLogs(
-                    logList.map((log) => toFrontendSymptomLog(log, symptomList, symptomExtras[log.id]))
-                )
-            )
-        }
-
-        load().catch((error) => {
-            console.error("Could not load your data:", error)
-        })
+                setMedications(medicationList)
+                setDoseLogs(takenDoses)
+                setSymptomLogs(logs.map(toFrontendSymptomLog))
+            })
+            .catch((error) => {
+                console.error("Could not load your data:", error)
+            })
 
         return () => {
             cancelled = true
@@ -291,11 +227,7 @@ export function useBackendData(enabled) {
     }
 
     async function refreshMedications() {
-        const medicationData = await loadMedicationData(user.id)
-        reminderLookup.current = medicationData.reminderLookup
-
-        setMedications(medicationData.medications)
-        setDoses(await loadDoses(medicationData.reminderLookup))
+        setMedications(await loadMedications(user.id))
     }
 
     // Adds the medication, then one reminder per time (the backend keeps reminders separately).
@@ -347,121 +279,71 @@ export function useBackendData(enabled) {
         }
     }
 
-    // The backend can mark a dose as taken but has no way to undo it.
+    // Checks or unchecks a dose. The backend also adjusts the medication's pill count.
     async function toggleDoseTaken(doseKey) {
-        if (doses.logs[doseKey]) {
-            throw new Error("A dose that was marked as taken can't be undone yet.")
-        }
+        const [medicationId, doseDate, doseTime] = doseKey.split("|")
 
-        let doseId = doses.ids[doseKey]
-
-        if (!doseId) {
-            const fresh = await loadDoses(reminderLookup.current)
-            setDoses(fresh)
-            doseId = fresh.ids[doseKey]
-        }
-
-        if (!doseId) {
-            throw new Error("This dose isn't scheduled yet. Please try again in a moment.")
-        }
-
-        const updated = await medicationApi.markDoseTaken(doseId)
-
-        setDoses((current) => ({
-            ...current,
-            logs: {...current.logs, [doseKey]: updated.taken_at},
-        }))
-    }
-
-    // Finds a symptom by name, or adds it to the shared list when it's new.
-    async function getSymptomId(name) {
-        const trimmed = name.trim()
-        const find = (list) =>
-            list.find((symptom) => symptom.name.toLowerCase() === trimmed.toLowerCase())
-
-        const existing = find(symptoms)
-
-        if (existing) {
-            return {id: existing.id, list: symptoms}
-        }
-
-        try {
-            const created = await symptomApi.createSymptom(trimmed)
-            const list = [...symptoms, created]
-
-            setSymptoms(list)
-
-            return {id: created.id, list}
-        } catch (error) {
-            // Someone else added it first, so fetch the list and use that one.
-            if (error.status !== 409) {
-                throw error
-            }
-
-            const list = await symptomApi.listSymptoms()
-
-            setSymptoms(list)
-
-            return {id: find(list).id, list}
-        }
-    }
-
-    async function addSymptomEntry({symptom, logged_on, note, ...extras}) {
-        const {id: symptomId, list} = await getSymptomId(symptom)
-
-        const created = await symptomApi.createSymptomLog({
-            symptom_id: symptomId,
-            logged_on,
-            note: note || undefined,
+        const result = await medicationApi.toggleDose({
+            med_id: Number(medicationId),
+            dose_date: doseDate,
+            dose_time: doseTime,
         })
 
-        const entryExtras = pick(extras, SYMPTOM_EXTRA_FIELDS)
+        setDoseLogs((current) => {
+            const updated = {...current}
 
-        saveExtra(user.id, "symptom", created.id, entryExtras)
+            if (result.taken) {
+                updated[doseKey] = result.taken_at
+            } else {
+                delete updated[doseKey]
+            }
 
-        setSymptomLogs((current) =>
-            sortSymptomLogs([...current, toFrontendSymptomLog(created, list, entryExtras)])
+            return updated
+        })
+
+        // Keep the pill count shown in the app in step with what the backend now holds.
+        setMedications((current) =>
+            current.map((medication) =>
+                medication.id === Number(medicationId) && medication.pill_qty != null
+                    ? {
+                        ...medication,
+                        pill_qty: medication.pill_qty + (result.taken ? -1 : 1) * medication.pills_per_dose,
+                    }
+                    : medication
+            )
         )
+    }
+
+    async function addSymptomEntry(entry) {
+        const created = await symptomApi.createSymptomLog(entry)
+
+        setSymptomLogs((current) => [toFrontendSymptomLog(created), ...current])
 
         return created
+    }
+
+    async function updateSymptomEntry(entryId, changes) {
+        const updated = await symptomApi.updateSymptomLog(
+            entryId,
+            pick(changes, ["symptom", "severity", "duration", "notes"])
+        )
+
+        setSymptomLogs((current) =>
+            current.map((log) => (log.id === entryId ? toFrontendSymptomLog(updated) : log))
+        )
     }
 
     async function deleteSymptomEntry(entryId) {
         await symptomApi.deleteSymptomLog(entryId)
 
-        saveExtra(user.id, "symptom", entryId, null)
-
         setSymptomLogs((current) => current.filter((log) => log.id !== entryId))
-    }
-
-    // The backend has no way to edit a log, so an edit saves a new entry and removes the old one.
-    async function updateSymptomEntry(entryId, changes) {
-        const existing = symptomLogs.find((log) => log.id === entryId)
-
-        if (!existing) {
-            return
-        }
-
-        const merged = {...existing, ...changes}
-
-        await addSymptomEntry({
-            symptom: merged.symptom,
-            logged_on: merged.logged_on,
-            note: merged.note,
-            time: merged.time,
-            severity: merged.severity,
-            duration: merged.duration,
-        })
-
-        await deleteSymptomEntry(entryId)
     }
 
     return {
         user,
         authLoading,
         medications,
-        doseLogs: doses.logs,
-        symptoms,
+        doseLogs,
         symptomLogs,
         signIn,
         signUp,

@@ -22,8 +22,9 @@ export const createReminder = (medicationId, doseTime) =>
 export const deleteReminder = (medicationId, reminderId) =>
     apiFetch(`/medications/${medicationId}/reminders/${reminderId}`, {method: "DELETE"})
 
-// /api/doses
-export const listTodayDoses = () => apiFetch("/doses/today")
+// /api/doses  (only doses that were marked as taken are stored)
+export const listTakenDoses = (doseDate) => apiFetch(`/doses/?dose_date=${doseDate}`)
 
-export const markDoseTaken = (doseId) =>
-    apiFetch(`/doses/${doseId}/taken`, {method: "POST"})
+// Checks or unchecks one dose and returns {taken, taken_at}.
+export const toggleDose = ({med_id, dose_date, dose_time}) =>
+    apiFetch("/doses/toggle", {method: "POST", json: {med_id, dose_date, dose_time}})

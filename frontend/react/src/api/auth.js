@@ -11,7 +11,8 @@ export function signUp({first_name, last_name, email, password, d_o_b}) {
             email,
             password,
             d_o_b,
-            terms_accepted_at: new Date().toISOString(),
+            // The backend now takes a yes/no here (the box on the sign-up page) and stamps the time itself.
+            terms_accepted_at: true,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         },
     })
