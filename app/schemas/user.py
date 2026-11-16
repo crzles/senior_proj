@@ -17,7 +17,7 @@ class UserCreate(BaseModel): #inherits BaseModel from Pydantic
     email: EmailStr
     password: str = Field(min_length=8)
     d_o_b: date
-    terms_accepted_at: datetime
+    terms_accepted_at: bool
     timezone: str = "UTC"
 
     @field_validator("timezone")
