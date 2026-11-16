@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
+import {ArrowLeft} from "lucide-react"
 
 function AddMedication() {
     const navigate = useNavigate()
@@ -124,7 +125,7 @@ function AddMedication() {
         setCustomTimes(customTimes.filter((_, i) => i !== index))
     }
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault()
 
         if (!medicationName.trim()) {
@@ -228,7 +229,12 @@ function AddMedication() {
             storage_notes: storageNotes.trim(),
         }
 
-        addMedication(medicationData)
+        try {
+            await addMedication(medicationData)
+        } catch (error) {
+            alert(error.message)
+            return
+        }
 
         alert(`${medicationName} has been added!`)
 
@@ -281,7 +287,7 @@ function AddMedication() {
                         onClick={cancelAdd}
                         className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
                     >
-                        ←
+                        <ArrowLeft className="mx-auto block h-5 w-5" aria-hidden="true" />
                     </button>
 
                 </div>
@@ -427,6 +433,7 @@ function AddMedication() {
                                         setDosage(event.target.value)
                                     }
                                     placeholder="e.g. 200 mg"
+                                    maxLength={50}
                                     className={inputClass}
                                 />
                             </div>
@@ -439,6 +446,7 @@ function AddMedication() {
                                 <input
                                     type="number"
                                     min="0.01"
+                                    max="9.99"
                                     step="0.01"
                                     value={pillsPerDose}
                                     onChange={(event) =>
@@ -892,6 +900,7 @@ function AddMedication() {
                                     <input
                                         type="number"
                                         min="0"
+                                        max="99999.99"
                                         value={pillQuantity}
                                         onChange={(event) =>
                                             setPillQuantity(
