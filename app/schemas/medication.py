@@ -54,10 +54,13 @@ class DoseResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class DoseToggleResponse(BaseModel):
     taken: bool
     taken_at: Optional[datetime] = None
+
     
+
 class MedicationBase(BaseModel):
     med_name: str
     med_type: Optional[str] = None
@@ -124,4 +127,6 @@ class MedicationResponse(MedicationBase):
     user_id: int
     created_at: datetime
 
+
     model_config = ConfigDict(from_attributes=True)
+
