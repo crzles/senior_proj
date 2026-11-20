@@ -4,6 +4,7 @@ import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
 import {Search} from "lucide-react"
 import BottomNav from "../components/BottomNav"
+import AddMedicationButton from "../components/AddMedicationButton"
 
 function MedicationList() {
     const [searchQuery, setSearchQuery] = useState("")
@@ -93,7 +94,7 @@ function MedicationList() {
     }
 
     return (
-        <div className={`min-h-screen ${currentTheme.background} p-4 pb-24 flex flex-col`}>
+        <div className={`min-h-screen ${currentTheme.background} p-4 pb-36 flex flex-col`}>
 
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
@@ -330,14 +331,8 @@ function MedicationList() {
                 </div>
             </div>
 
-            {/* Add Medication */}
-            <button
-                type="button"
-                onClick={goToAddMedication}
-                className={`w-full py-3 ${currentTheme.primary} text-white font-semibold rounded-xl hover:opacity-90`}
-            >
-                + Add Medication
-            </button>
+            {/* Floating Add Medication button, just above the nav */}
+            <AddMedicationButton bottomClass="bottom-[4.25rem]" />
 
             {/* Bottom Navigation */}
             <BottomNav />

@@ -4,6 +4,7 @@ import {DemoProvider, useDemo} from "./context/DemoContext"
 import AuthPage from "./pages/AuthPage"
 import HomePage from "./pages/HomePage"
 import ComingSoon from "./pages/ComingSoon"
+import InsightsPage from "./pages/InsightsPage"
 import MedicationList from "./pages/MedicationList"
 import AddMedication from "./pages/AddMedication"
 import EditMedication from "./pages/EditMedication"
@@ -40,6 +41,7 @@ function App() {
                         <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
                         <Route path="/map" element={<RequireAuth><MapPage /></RequireAuth>} />
                         <Route path="/symptoms" element={<RequireAuth><SymptomPage /></RequireAuth>} />
+                        <Route path="/insights" element={<RequireAuth><InsightsPage /></RequireAuth>} />
                         <Route path="/coming-soon" element={<RequireAuth><ComingSoon /></RequireAuth>} />
                     </Routes>
                 </DemoProvider>

@@ -4,6 +4,7 @@ import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
 import {ArrowRight, CalendarDays, Check, Clock, Hand, Pill, X} from "lucide-react"
 import BottomNav from "../components/BottomNav"
+import AddMedicationButton from "../components/AddMedicationButton"
 
 function HomePage() {
     const [medicationFilter, setMedicationFilter] = useState("All")
@@ -144,7 +145,7 @@ function HomePage() {
     })
 
     return (
-        <div className={`min-h-screen ${currentTheme.background} p-4 pb-24 flex flex-col`}>
+        <div className={`min-h-screen ${currentTheme.background} p-4 pb-44 flex flex-col`}>
 
             {/* Welcome Header */}
             <div className="mb-4">
@@ -613,15 +614,8 @@ function HomePage() {
                 </div>
             )}
 
-            {/* Add Medication Button */}
-            <button
-                onClick={() => navigate("/add-medication")} 
-                className={`w-full py-3 ${currentTheme.primary} text-white font-semibold rounded-xl hover:opacity-90`}>
-                + Add Medication 
-            </button>
-
             {/* Medication Type Filter */}
-            <div className={`fixed bottom-[68px] left-0 right-0 ${currentTheme.background} flex gap-2 px-4 py-2 z-10`}>
+            <div className={`fixed bottom-14 left-0 right-0 ${currentTheme.background} flex gap-2 px-4 pt-2 pb-1 z-10`}>
 
                 <button
                     onClick={() => setTypeFilter("All")}
@@ -654,6 +648,9 @@ function HomePage() {
                     Supplement
                 </button>
             </div>
+
+            {/* Floating Add Medication button, sitting above the filter bar (3.5rem nav + 3rem bar) */}
+            <AddMedicationButton bottomClass="bottom-28" />
 
             {/* Bottom Navigation */}
             <BottomNav />
