@@ -188,7 +188,30 @@ const demoPharmacies = demoMode ? demoPharmacyData : []
 
 // User-added medications are always kept; the sample medications only appear in demo mode.
 const [medications, setMedications] = useState([])
-const [demoDoseLogs, setDoseLogs] = useState({})
+// Demo mode starts with the past six days of doses already logged, so the Insights page has
+// a week of history to work with. Ibuprofen (08:00) was skipped 2 and 5 days ago, and
+// Vitamin D (23:59) 3 days ago. Today's doses are left for the Home page.
+const [demoDoseLogs, setDoseLogs] = useState(() => {
+    const skipped = {1: [2, 5], 2: [3]}
+    const logs = {}
+
+    for (let daysAgo = 1; daysAgo <= 6; daysAgo++) {
+        const date = new Date()
+        date.setDate(date.getDate() - daysAgo)
+
+        demoMedicationData.forEach((medication) => {
+            if (skipped[medication.id]?.includes(daysAgo)) {
+                return
+            }
+
+            const time = medication.reminder_times[0]
+
+            logs[getDoseKey(medication.id, time, date)] = new Date(`${getDemoDateKey(daysAgo)}T${time}`).toISOString()
+        })
+    }
+
+    return logs
+})
 // Suggestions for the symptom field. The backend stores the name as typed on each entry.
 const symptoms = [
     "Headache",
@@ -230,6 +253,46 @@ const demoSymptomLogData = [
         duration: "30 minutes",
         notes: "Felt it after skipping breakfast.",
         logged_at: new Date(`${getDemoDateKey(0)}T08:30`).toISOString(),
+    },
+    {
+        id: 3,
+        symptom: "Fatigue",
+        date: getDemoDateKey(1),
+        time: "15:00",
+        severity: "Mild",
+        duration: "2 hours",
+        notes: "Slept badly the night before.",
+        logged_at: new Date(`${getDemoDateKey(1)}T15:00`).toISOString(),
+    },
+    {
+        id: 4,
+        symptom: "Headache",
+        date: getDemoDateKey(2),
+        time: "17:45",
+        severity: "Moderate",
+        duration: "1 hour",
+        notes: "Came on in the afternoon. Missed my morning dose.",
+        logged_at: new Date(`${getDemoDateKey(2)}T17:45`).toISOString(),
+    },
+    {
+        id: 5,
+        symptom: "Fatigue",
+        date: getDemoDateKey(4),
+        time: "14:20",
+        severity: "Mild",
+        duration: "3 hours",
+        notes: "",
+        logged_at: new Date(`${getDemoDateKey(4)}T14:20`).toISOString(),
+    },
+    {
+        id: 6,
+        symptom: "Headache",
+        date: getDemoDateKey(5),
+        time: "09:10",
+        severity: "Mild",
+        duration: "45 minutes",
+        notes: "Missed my morning dose.",
+        logged_at: new Date(`${getDemoDateKey(5)}T09:10`).toISOString(),
     },
     {
         id: 2,
