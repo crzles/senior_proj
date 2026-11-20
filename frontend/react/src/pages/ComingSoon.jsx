@@ -2,6 +2,7 @@ import {useNavigate} from "react-router-dom"
 import {useDemo} from "../context/DemoContext"
 import {useTheme} from "../context/ThemeContext"
 import pillbugLogo from "../assets/pillbug-logo.png"
+import {ArrowLeft, Clock} from "lucide-react"
 
 function ComingSoon() {
     const navigate = useNavigate()
@@ -36,7 +37,7 @@ function ComingSoon() {
                         {/* Profile Button */}
                         <button className="w-10 h-10 bg-blue-600 text-white rounded-full font-semibold">
                             {demoUser
-                                ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
+                                ? `${demoUser.first_name.charAt(0)}${demoUser.last_name.charAt(0)}`
                                 : "?"}
                         </button>
 
@@ -50,10 +51,8 @@ function ComingSoon() {
                <div className={`${currentTheme.card} w-full rounded-2xl p-6 text-center shadow-sm`}>
 
                     {/* Clock Icon */}
-                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <span className="text-4xl">
-                            ◷
-                        </span>
+                    <div className={`w-20 h-20 ${currentTheme.accentSoft} rounded-full flex items-center justify-center mx-auto mb-6`}>
+                        <Clock className="h-10 w-10" aria-hidden="true" />
                     </div>
 
                     {/* Title */}
@@ -72,7 +71,7 @@ function ComingSoon() {
                         onClick={() => navigate("/home")}
                         className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700"
                     >
-                        ← Back to Home
+                        <ArrowLeft className="mr-1 inline h-4 w-4" aria-hidden="true" />Back to Home
                     </button>
                 </div>
             </div>

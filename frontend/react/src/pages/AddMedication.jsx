@@ -1,12 +1,14 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
+import {ArrowLeft} from "lucide-react"
+import {searchDrugs} from "../api/drugs"
 
 function AddMedication() {
     const navigate = useNavigate()
     const location = useLocation()
-    const {addMedication} = useDemo()
+    const {demoMode, addMedication} = useDemo()
     const {currentTheme} = useTheme()
 
     // Medication information
@@ -44,6 +46,39 @@ function AddMedication() {
 
     // Search
     const [searchOpen, setSearchOpen] = useState(false)
+    // Results from the backend's drug search (openFDA), and the label picked from them
+    const [drugSearch, setDrugSearch] = useState({query: "", items: []})
+    const [labelSetId, setLabelSetId] = useState(null)
+
+    // With demo mode off, look the name up in the backend once the user pauses typing.
+    useEffect(() => {
+        const query = medicationName.trim()
+
+        if (demoMode || !searchOpen || query.length < 2) {
+            return
+        }
+
+        let cancelled = false
+
+        const timer = setTimeout(() => {
+            searchDrugs(query)
+                .then((items) => {
+                    if (!cancelled) {
+                        setDrugSearch({query, items})
+                    }
+                })
+                .catch(() => {
+                    if (!cancelled) {
+                        setDrugSearch({query, items: []})
+                    }
+                })
+        }, 300)
+
+        return () => {
+            cancelled = true
+            clearTimeout(timer)
+        }
+    }, [demoMode, searchOpen, medicationName])
 
     const medicationSuggestions = [
         "Ibuprofen",
@@ -56,6 +91,20 @@ function AddMedication() {
         "Magnesium",
         "Iron",
     ]
+
+    // Demo mode filters the sample list; otherwise show what the backend's drug search found.
+    const typedName = medicationName.trim()
+
+    const suggestions = demoMode
+        ? medicationSuggestions
+            .filter((item) => item.toLowerCase().includes(typedName.toLowerCase()))
+            .map((item) => ({key: item, name: item, detail: "", labelSetId: null}))
+        : (drugSearch.query === typedName ? drugSearch.items : []).map((drug) => ({
+            key: drug.set_id,
+            name: drug.med_name,
+            detail: drug.generic_name && drug.generic_name !== drug.med_name ? drug.generic_name : "",
+            labelSetId: drug.set_id,
+        }))
 
     const daysOfWeek = [
         "Monday",
@@ -124,7 +173,7 @@ function AddMedication() {
         setCustomTimes(customTimes.filter((_, i) => i !== index))
     }
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault()
 
         if (!medicationName.trim()) {
@@ -223,12 +272,18 @@ function AddMedication() {
                     ? Number(refillReminder)
                     : null,
 
+            ...(labelSetId && {label_set_id: labelSetId}),
             requirements: instructions.trim(),
             avoid_notes: avoidNotes.trim(),
             storage_notes: storageNotes.trim(),
         }
 
-        addMedication(medicationData)
+        try {
+            await addMedication(medicationData)
+        } catch (error) {
+            alert(error.message)
+            return
+        }
 
         alert(`${medicationName} has been added!`)
 
@@ -281,7 +336,7 @@ function AddMedication() {
                         onClick={cancelAdd}
                         className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
                     >
-                        ←
+                        <ArrowLeft className="mx-auto block h-5 w-5" aria-hidden="true" />
                     </button>
 
                 </div>
@@ -325,6 +380,7 @@ function AddMedication() {
                                 value={medicationName}
                                 onChange={(event) => {
                                     setMedicationName(event.target.value)
+                                    setLabelSetId(null)
                                     setSearchOpen(true)
                                 }}
                                 onFocus={() => setSearchOpen(true)}
@@ -343,27 +399,26 @@ function AddMedication() {
                                 medicationName.trim() !== "" && (
                                     <div className={`absolute top-full left-0 right-0 mt-1 ${currentTheme.card} ${currentTheme.border} border rounded-xl shadow-lg overflow-hidden z-10`}>
 
-                                        {medicationSuggestions
-                                            .filter((item) =>
-                                                item
-                                                    .toLowerCase()
-                                                    .includes(
-                                                        medicationName.toLowerCase()
-                                                    )
-                                            )
-                                            .map((item) => (
-                                                <button
-                                                    key={item}
-                                                    type="button"
-                                                    onMouseDown={() => {
-                                                        setMedicationName(item)
-                                                        setSearchOpen(false)
-                                                    }}
-                                                    className={`w-full px-4 py-3 text-left text-sm ${currentTheme.text} border-b ${currentTheme.border} hover:opacity-80`}
-                                                >
-                                                    {item}
-                                                </button>
-                                            ))}
+                                        {suggestions.map((item) => (
+                                            <button
+                                                key={item.key}
+                                                type="button"
+                                                onMouseDown={() => {
+                                                    setMedicationName(item.name)
+                                                    setLabelSetId(item.labelSetId)
+                                                    setSearchOpen(false)
+                                                }}
+                                                className={`w-full px-4 py-3 text-left text-sm ${currentTheme.text} border-b ${currentTheme.border} hover:opacity-80`}
+                                            >
+                                                {item.name}
+
+                                                {item.detail && (
+                                                    <span className={`block text-xs ${currentTheme.secondaryText}`}>
+                                                        {item.detail}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        ))}
 
                                         <button
                                             type="button"
@@ -427,6 +482,7 @@ function AddMedication() {
                                         setDosage(event.target.value)
                                     }
                                     placeholder="e.g. 200 mg"
+                                    maxLength={50}
                                     className={inputClass}
                                 />
                             </div>
@@ -439,6 +495,7 @@ function AddMedication() {
                                 <input
                                     type="number"
                                     min="0.01"
+                                    max="9.99"
                                     step="0.01"
                                     value={pillsPerDose}
                                     onChange={(event) =>
@@ -892,6 +949,7 @@ function AddMedication() {
                                     <input
                                         type="number"
                                         min="0"
+                                        max="99999.99"
                                         value={pillQuantity}
                                         onChange={(event) =>
                                             setPillQuantity(

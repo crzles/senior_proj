@@ -2,11 +2,14 @@
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
+import {ArrowLeft, ChevronLeft, Clock, ListChecks, Package, Pencil, Pill, Trash2, TriangleAlert} from "lucide-react"
+import DrugLabelSection from "../components/DrugLabelSection"
+import RefillSection from "../components/RefillSection"
 
 function MedicationInfo() {
     const [searchParams] = useSearchParams()
     const medicationId = searchParams.get("id")
-    const { demoMedications } = useDemo()
+    const { demoMedications, deleteMedication } = useDemo()
     const { currentTheme } = useTheme()
     const navigate = useNavigate()
     const location = useLocation()
@@ -25,6 +28,25 @@ function MedicationInfo() {
         (med) => String(med.id) === medicationId
     )
 
+    async function handleDelete() {
+        const confirmed = window.confirm(
+            `Delete ${medication.med_name}? Its reminders and refill history will be removed too.`
+        )
+
+        if (!confirmed) {
+            return
+        }
+
+        try {
+            await deleteMedication(medication.id)
+        } catch (error) {
+            alert(error.message)
+            return
+        }
+
+        navigate("/MedPage", {replace: true})
+    }
+
     if (!medication) {
         return (
             <div className={`min-h-screen ${currentTheme.background} p-6`}>
@@ -32,7 +54,7 @@ function MedicationInfo() {
                     onClick={goBack}
                     className={`${currentTheme.text} mb-6`}
                 >
-                    ← Back to medications
+                    <ArrowLeft className="mr-1 inline h-4 w-4" aria-hidden="true" />Back to medications
                 </button>
                 <p className={currentTheme.text}>
                     Medication not found.
@@ -85,7 +107,7 @@ function MedicationInfo() {
                         aria-label="Back"
                         className={`w-10 h-10 ${currentTheme.card} ${currentTheme.text} rounded-full shadow-sm text-2xl`}
                     >
-                        ‹
+                        <ChevronLeft className="mx-auto block h-6 w-6" aria-hidden="true" />
                     </button>
 
                     <h1 className={`text-lg font-bold ${currentTheme.text}`}>
@@ -95,8 +117,8 @@ function MedicationInfo() {
 
                 {/* Medication Card */}
                 <section className={`${inputCard} flex items-center gap-3 mb-4`}>
-                    <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-2xl">
-                        ♡
+                    <div className={`w-12 h-12 rounded-full ${currentTheme.accentSoft} flex items-center justify-center`}>
+                        <Pill className="h-6 w-6" aria-hidden="true" />
                     </div>
 
                     <div>
@@ -111,8 +133,8 @@ function MedicationInfo() {
 
                 {/* Next Reminder */}
                 <section className="bg-blue-600 text-white rounded-xl p-4 mb-4 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl">
-                        ◷
+                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                        <Clock className="h-5 w-5" aria-hidden="true" />
                     </div>
 
                     <div>
@@ -169,24 +191,17 @@ function MedicationInfo() {
                     </div>
                 </section>
 
-                {/* Symptoms / Tags */}
-                <section className={`${inputCard} mb-4`}>
-                    <div className="flex items-center justify-between gap-3">
-                        <h3 className={`text-sm font-semibold ${currentTheme.text}`}>
-                            Symptoms / Tags
-                        </h3>
+                {/* Refills (only for refillable medications) */}
+                <RefillSection medication={medication} />
 
-                        <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs">
-                            Pain relief
-                        </span>
-                    </div>
-                </section>
+                {/* What the linked FDA drug label says (only when a label is linked) */}
+                <DrugLabelSection medication={medication} />
 
                 {/* Additional Information */}
                 <section className={`${inputCard} mb-4`}>
                     <div className="flex gap-3 pb-3">
-                        <span className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                            ♧
+                        <span className={`w-7 h-7 rounded-full ${currentTheme.accentSoft} flex items-center justify-center`}>
+                            <ListChecks className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
                             <h3 className={`text-sm font-semibold ${currentTheme.text}`}>
@@ -199,8 +214,8 @@ function MedicationInfo() {
                     </div>
 
                     <div className={`flex gap-3 py-3 border-t ${currentTheme.border}`}>
-                        <span className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                            !
+                        <span className={`w-7 h-7 rounded-full ${currentTheme.accentSoft} flex items-center justify-center`}>
+                            <TriangleAlert className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
                             <h3 className={`text-sm font-semibold ${currentTheme.text}`}>
@@ -213,8 +228,8 @@ function MedicationInfo() {
                     </div>
 
                     <div className={`flex gap-3 pt-3 border-t ${currentTheme.border}`}>
-                        <span className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                            ◈
+                        <span className={`w-7 h-7 rounded-full ${currentTheme.accentSoft} flex items-center justify-center`}>
+                            <Package className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
                             <h3 className={`text-sm font-semibold ${currentTheme.text}`}>
@@ -236,15 +251,23 @@ function MedicationInfo() {
                         }
                         className="w-full py-3 bg-blue-600 text-white rounded-lg text-sm font-bold"
                     >
-                        ✎ Edit Medication
+                        <Pencil className="mr-2 inline h-4 w-4" aria-hidden="true" />Edit Medication
                     </button>
 
                     <button
                         type="button"
                         onClick={() => navigate("/MedPage")}
-                        className={`w-full py-3 border ${currentTheme.border} ${currentTheme.card} text-blue-600 rounded-lg text-sm font-semibold`}
+                        className={`w-full py-3 border ${currentTheme.border} ${currentTheme.card} ${currentTheme.accentText} rounded-lg text-sm font-semibold`}
                     >
                         My Medications
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleDelete}
+                        className={`w-full py-3 border ${currentTheme.border} ${currentTheme.card} ${currentTheme.dangerText} rounded-lg text-sm font-semibold`}
+                    >
+                        <Trash2 className="mr-2 inline h-4 w-4" aria-hidden="true" />Delete Medication
                     </button>
                 </div>
 

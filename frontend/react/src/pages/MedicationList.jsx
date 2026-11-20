@@ -2,13 +2,15 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
+import {Search} from "lucide-react"
+import BottomNav from "../components/BottomNav"
 
 function MedicationList() {
     const [searchQuery, setSearchQuery] = useState("")
     const [typeFilter, setTypeFilter] = useState("All")
     const [showProfileMenu, setShowProfileMenu] = useState(false)
 
-    const {demoUser, demoMedications} = useDemo()
+    const {demoUser, demoMedications, signOut} = useDemo()
     const {currentTheme} = useTheme()
     const navigate = useNavigate()
 
@@ -119,7 +121,7 @@ function MedicationList() {
                             className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
                         >
                             {demoUser
-                                ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
+                                ? `${demoUser.first_name.charAt(0)}${demoUser.last_name.charAt(0)}`
                                 : "?"}
                         </button>
 
@@ -128,14 +130,14 @@ function MedicationList() {
                                 <div className="flex items-center gap-3 mb-3">
                                     <div className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full flex items-center justify-center font-semibold`}>
                                         {demoUser
-                                            ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
+                                            ? `${demoUser.first_name.charAt(0)}${demoUser.last_name.charAt(0)}`
                                             : "?"}
                                     </div>
 
                                     <div className="min-w-0">
                                         <p className={`${currentTheme.text} font-semibold truncate`}>
                                             {demoUser
-                                                ? `${demoUser.firstName} ${demoUser.lastName}`
+                                                ? `${demoUser.first_name} ${demoUser.last_name}`
                                                 : "Guest"}
                                         </p>
                                         <p className={`${currentTheme.secondaryText} text-xs`}>
@@ -147,9 +149,10 @@ function MedicationList() {
                                 <button
                                     onClick={() => {
                                         setShowProfileMenu(false)
+                                        signOut()
                                         navigate("/")
                                     }}
-                                    className="w-full text-left text-red-500 hover:bg-red-50 rounded-lg px-3 py-2 text-sm font-medium"
+                                    className={`w-full text-left ${currentTheme.dangerText} ${currentTheme.dangerHover} rounded-lg px-3 py-2 text-sm font-medium`}
                                 >
                                     Sign out
                                 </button>
@@ -183,7 +186,7 @@ function MedicationList() {
 
                 {/* Search Bar */}
                 <div className={`flex items-center gap-2 ${currentTheme.card} border ${currentTheme.border} rounded-xl px-3 py-2 mb-3`}>
-                    <span>🔍</span>
+                    <Search className={`h-4 w-4 ${currentTheme.secondaryText}`} aria-hidden="true" />
                     <input
                         type="text"
                         value={searchQuery}
@@ -246,7 +249,7 @@ function MedicationList() {
                                     </p>
                                 </div>
 
-                                <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold">
+                                <span className={`px-3 py-1 ${currentTheme.successSoft} rounded-full text-xs font-semibold`}>
                                     Active
                                 </span>
 
@@ -255,7 +258,7 @@ function MedicationList() {
                             {/* Medication Details */}
                             <div className="grid grid-cols-2 gap-3 mb-3">
 
-                                <div className="bg-gray-100 rounded-lg p-3">
+                                <div className={`${currentTheme.inset} rounded-lg p-3`}>
                                     <p className={`text-xs ${currentTheme.secondaryText} mb-1`}>
                                         Frequency
                                     </p>
@@ -265,7 +268,7 @@ function MedicationList() {
                                     </p>
                                 </div>
 
-                                <div className="bg-gray-100 rounded-lg p-3">
+                                <div className={`${currentTheme.inset} rounded-lg p-3`}>
                                     <p className={`text-xs ${currentTheme.secondaryText} mb-1`}>
                                         Per dose
                                     </p>
@@ -281,7 +284,7 @@ function MedicationList() {
                             </div>
 
                             {/* Next Dose */}
-                            <div className="bg-gray-100 rounded-lg p-3 mb-3">
+                            <div className={`${currentTheme.inset} rounded-lg p-3 mb-3`}>
 
                                 <div className="flex items-center justify-between">
                                     <p className={`text-sm ${currentTheme.secondaryText}`}>
@@ -337,54 +340,7 @@ function MedicationList() {
             </button>
 
             {/* Bottom Navigation */}
-            <nav className={`fixed bottom-0 left-0 right-0 ${currentTheme.card} border-t ${currentTheme.border} px-2 py-2`}>
-
-                <div className="flex justify-around">
-
-                    <button
-                        onClick={() => navigate("/home")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">⌂</span>
-                        Home
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/MedPage")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">💊</span>
-                        My Medications
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/coming-soon")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">📍</span>
-                        Map
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/coming-soon")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">📝</span>
-                        Symptoms
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/coming-soon")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">📅</span>
-                        Calendar
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/coming-soon")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">👤</span>
-                        Profile
-                    </button>
-
-                </div>
-            </nav>
+            <BottomNav />
 
         </div>
     )

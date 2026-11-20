@@ -1,4 +1,4 @@
-import {createContext, useContext, useState} from "react"
+import {createContext, useContext, useEffect, useState} from "react"
 
 const ThemeContext = createContext()
 
@@ -11,6 +11,17 @@ const themes = {
         primary: "bg-blue-600",
         primaryHover: "hover:bg-blue-700",
         border: "border-gray-200",
+        // Panels inside a card, and light-blue icon chips
+        inset: "bg-gray-100",
+        accentSoft: "bg-blue-50 text-blue-600",
+        // Blue and red for text and outlines that sit on a card
+        accentText: "text-blue-600",
+        accentBorder: "border-blue-600",
+        dangerText: "text-red-500",
+        dangerHover: "hover:bg-red-50",
+        // Green and red message boxes
+        successSoft: "bg-green-50 text-green-700",
+        dangerSoft: "bg-red-50 text-red-700",
     },
 
     dark: {
@@ -21,6 +32,14 @@ const themes = {
         primary: "bg-blue-500",
         primaryHover: "hover:bg-blue-600",
         border: "border-slate-700",
+        inset: "bg-slate-700",
+        accentSoft: "bg-blue-500/20 text-blue-300",
+        accentText: "text-blue-400",
+        accentBorder: "border-blue-400",
+        dangerText: "text-red-400",
+        dangerHover: "hover:bg-red-500/10",
+        successSoft: "bg-green-900/40 text-green-300",
+        dangerSoft: "bg-red-900/40 text-red-300",
     },
 }
 
@@ -33,6 +52,10 @@ export function ThemeProvider({ children }) {
         setTheme(newTheme)
         localStorage.setItem("pillbug-theme", newTheme)
     }
+
+    useEffect(() => {
+        document.documentElement.style.colorScheme = theme
+    }, [theme])
 
     return (
         <ThemeContext.Provider

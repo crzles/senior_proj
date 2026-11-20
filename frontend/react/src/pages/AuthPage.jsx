@@ -1,11 +1,14 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
+import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
 import pillbugLogo from "../assets/pillbug-logo.png"
+import {Hand, Heart} from "lucide-react"
 
 function AuthPage() {
     const navigate = useNavigate()
     const {currentTheme} = useTheme()
+    const {demoMode, isAuthenticated, signIn, signUp} = useDemo()
 
     const [isSignUp, setIsSignUp] = useState(false)
     const [firstName, setFirstName] = useState("")
@@ -14,10 +17,44 @@ function AuthPage() {
     const [password, setPassword] = useState("")
     const [dateOfBirth, setDateOfBirth] = useState("")
     const [termsAccepted, setTermsAccepted] = useState(false)
+    const [error, setError] = useState("")
+    const [submitting, setSubmitting] = useState(false)
+
+    // Already signed in, so there is nothing to do here.
+    if (!demoMode && isAuthenticated) {
+        return <Navigate to="/home" replace />
+    }
+
+    // Runs the sign-in or sign-up request, then goes home only if it worked.
+    // Demo mode skips the backend so the app can be tested without an account.
+    const submit = async (request) => {
+        setError("")
+
+        if (demoMode) {
+            navigate("/home")
+            return
+        }
+
+        setSubmitting(true)
+
+        try {
+            await request()
+            navigate("/home")
+        } catch (requestError) {
+            setError(requestError.message)
+        } finally {
+            setSubmitting(false)
+        }
+    }
 
     const handleSignUp = () => {
         if(!firstName || !lastName || !email || !password || !dateOfBirth) {
             alert("Please fill out all required fields.")
+            return
+        }
+
+        if(password.length < 8) {
+            alert("Password must be at least 8 characters.")
             return
         }
 
@@ -26,7 +63,15 @@ function AuthPage() {
             return
         }
 
-        navigate("/home")
+        submit(() =>
+            signUp({
+                first_name: firstName.trim(),
+                last_name: lastName.trim(),
+                email: email.trim(),
+                password,
+                d_o_b: dateOfBirth,
+            })
+        )
     }
 
     const handleSignIn = () => {
@@ -35,7 +80,7 @@ function AuthPage() {
             return
         }
 
-        navigate("/home")
+        submit(() => signIn(email.trim(), password))
     }
 
     const inputClass =
@@ -66,20 +111,20 @@ function AuthPage() {
                 </div>
 
                 {/*Welcome Card */}
-                <div className={`${isSignUp ? `${currentTheme.primary} text-white` : "bg-gray-100 text-gray-900"} mx-5 rounded-xl p-5 mb-5`}>
+                <div className={`${isSignUp ? `${currentTheme.primary} text-white` : `${currentTheme.inset} ${currentTheme.text}`} mx-5 rounded-xl p-5 mb-5`}>
 
                     {/* Welcome Icon */}
-                    <div className={`w-12 h-12 ${isSignUp ? "bg-white/20" : "bg-white"} rounded-full flex items-center justify-center mb-4`}>
-                        <span className="text-2xl">
-                            {isSignUp ? "❤️" : "👋"}
-                            </span>
+                    <div className={`w-12 h-12 ${isSignUp ? "bg-white/20" : currentTheme.card} rounded-full flex items-center justify-center mb-4`}>
+                        {isSignUp
+                            ? <Heart className="h-6 w-6" aria-hidden="true" />
+                            : <Hand className="h-6 w-6" aria-hidden="true" />}
                     </div>
 
                     <h2 className="text-2xl font-bold mb-2">
                         {isSignUp ? "Start your health journey" : "Welcome to PillBug"}
                     </h2>
 
-                    <p className={`text-sm ${isSignUp ? "text-white" : "text-gray-600"}`}>
+                    <p className={`text-sm ${isSignUp ? "text-white" : currentTheme.secondaryText}`}>
                         {isSignUp
                             ? "Track your medications, supplements, and symptoms with ease."
                             : "Keep your medications, supplements, and symptoms in one place."}
@@ -89,24 +134,24 @@ function AuthPage() {
                 </div>
                         
                 {/* Sign in / Sign up Tabs */}
-                <div className="mx-5 flex bg-gray-100 rounded-xl p-1 mb-4">
+                <div className={`mx-5 flex ${currentTheme.inset} rounded-xl p-1 mb-4`}>
                     <button
-                        onClick={() => setIsSignUp(false)} 
+                        onClick={() => { setIsSignUp(false); setError("") }} 
                         className={`flex-1 py-2 text-sm font-semibold rounded-lg ${
                             !isSignUp
                                 ? `${currentTheme.primary} text-white`
-                                : "text-gray-600"
+                                : currentTheme.secondaryText
                         }`}
                     >
                         Sign In
                     </button>
 
                     <button
-                        onClick={() => setIsSignUp(true)} 
+                        onClick={() => { setIsSignUp(true); setError("") }} 
                         className={`flex-1 py-2 text-sm font-semibold rounded-lg ${
                             isSignUp
                                 ? `${currentTheme.primary} text-white`
-                                : "text-gray-600"
+                                : currentTheme.secondaryText
                         }`}
                     >
                         Sign Up
@@ -127,6 +172,7 @@ function AuthPage() {
                                     <input
                                         type="text"
                                         value={firstName}
+                                        maxLength={50}
                                         onChange={(e) => setFirstName(e.target.value)}
                                         className={inputClass} 
                                     />
@@ -141,6 +187,7 @@ function AuthPage() {
                                     <input
                                         type="text"
                                         value={lastName}
+                                        maxLength={50}
                                         onChange={(e) => setLastName(e.target.value)}
                                         className={inputClass} 
                                     />
@@ -207,12 +254,19 @@ function AuthPage() {
                                     </span>
                                 </div>
                             </div>
+                                {error && (
+                                    <p role="alert" className={`mb-3 text-sm ${currentTheme.dangerText}`}>
+                                        {error}
+                                    </p>
+                                )}
+
                                 {/* Sign Up Button */}
                                 <button
                                     onClick={handleSignUp}
-                                    className={`w-full py-3 ${currentTheme.primary} text-white font-semibold rounded-xl hover:opacity-90`}
+                                    disabled={submitting}
+                                    className={`w-full py-3 ${currentTheme.primary} text-white font-semibold rounded-xl hover:opacity-90 disabled:opacity-60`}
                                 >
-                                    Sign Up
+                                    {submitting ? "Creating account..." : "Sign Up"}
                                 </button>
                             </>
                         ) : (
@@ -252,12 +306,19 @@ function AuthPage() {
                                     </button>
                                 </div>
 
+                                {error && (
+                                    <p role="alert" className={`mb-3 text-sm ${currentTheme.dangerText}`}>
+                                        {error}
+                                    </p>
+                                )}
+
                                 {/* Sign In Button */}
                                 <button
                                     onClick={handleSignIn}
-                                    className={`w-full py-3 ${currentTheme.primary} text-white font-semibold rounded-xl hover:opacity-90`}
+                                    disabled={submitting}
+                                    className={`w-full py-3 ${currentTheme.primary} text-white font-semibold rounded-xl hover:opacity-90 disabled:opacity-60`}
                                 >
-                                    Sign In
+                                    {submitting ? "Signing in..." : "Sign In"}
                                 </button>
                             </>
                         )}

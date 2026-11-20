@@ -1,19 +1,9 @@
 import {useState} from "react"
 import {useNavigate} from "react-router-dom"
+import ProfileMenu from "../components/ProfileMenu"
 import {useDemo} from "../context/DemoContext"
 import {useTheme} from "../context/ThemeContext"
-
-const commonSymptoms = [
-    "Headache",
-    "Nausea",
-    "Dizziness",
-    "Fatigue",
-    "Fever",
-    "Cough",
-    "Stomach pain",
-    "Rash",
-    "Shortness of breath",
-]
+import BottomNav from "../components/BottomNav"
 
 const severities = ["Mild", "Moderate", "Severe"]
 
@@ -40,7 +30,7 @@ function SymptomPage() {
     const [error, setError] = useState("")
 
     const navigate = useNavigate()
-    const {addSymptomEntry} = useDemo()
+    const {symptoms, addSymptomEntry} = useDemo()
     const {currentTheme} = useTheme()
 
     const inputClass = `w-full rounded-lg border ${currentTheme.border} bg-transparent px-3 py-2 text-sm outline-none ${currentTheme.text}`
@@ -51,7 +41,7 @@ function SymptomPage() {
         setError("")
     }
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault()
 
         if (!form.symptom.trim() || !form.date || !form.time || !form.severity) {
@@ -59,12 +49,19 @@ function SymptomPage() {
             return
         }
 
-        addSymptomEntry({
-            ...form,
-            symptom: form.symptom.trim(),
-            duration: form.duration.trim(),
-            notes: form.notes.trim(),
-        })
+        try {
+            await addSymptomEntry({
+                symptom: form.symptom.trim(),
+                date: form.date,
+                time: form.time,
+                severity: form.severity,
+                duration: form.duration.trim(),
+                notes: form.notes.trim(),
+            })
+        } catch (saveError) {
+            setError(saveError.message)
+            return
+        }
 
         setForm(emptyForm)
         setSaved(true)
@@ -74,13 +71,17 @@ function SymptomPage() {
         <div className={`min-h-screen ${currentTheme.background} p-4 pb-24 flex flex-col`}>
 
             {/* Header */}
-            <div className="mb-4">
-                <h1 className={`${currentTheme.text} text-xl font-bold`}>
-                    Symptom log
-                </h1>
-                <p className={`${currentTheme.secondaryText} text-sm`}>
-                    Record symptoms. Keep your streaks.
-                </p>
+            <div className="mb-4 flex items-center justify-between">
+                <div>
+                    <h1 className={`${currentTheme.text} text-xl font-bold`}>
+                        Symptom log
+                    </h1>
+                    <p className={`${currentTheme.secondaryText} text-sm`}>
+                        Record symptoms. Keep your streaks.
+                    </p>
+                </div>
+
+                <ProfileMenu />
             </div>
 
             {/* New Entry Form */}
@@ -106,14 +107,15 @@ function SymptomPage() {
                         id="symptom"
                         type="text"
                         list="symptom-options"
+                        maxLength={100}
                         value={form.symptom}
                         onChange={(event) => updateField("symptom", event.target.value)}
                         placeholder="Choose or type a symptom"
                         className={inputClass}
                     />
                     <datalist id="symptom-options">
-                        {commonSymptoms.map((symptom) => (
-                            <option key={symptom} value={symptom} />
+                        {symptoms.map((symptom) => (
+                            <option key={symptom.id} value={symptom.name} />
                         ))}
                     </datalist>
                     <p className={`${currentTheme.secondaryText} text-xs mt-1`}>
@@ -220,7 +222,7 @@ function SymptomPage() {
                 </div>
 
                 {error && (
-                    <p role="alert" className="text-red-500 text-sm mb-3">
+                    <p role="alert" className={`${currentTheme.dangerText} text-sm mb-3`}>
                         {error}
                     </p>
                 )}
@@ -247,55 +249,7 @@ function SymptomPage() {
             </div>
 
             {/* Bottom Navigation */}
-            <nav className={`fixed bottom-0 left-0 right-0 ${currentTheme.card} border-t ${currentTheme.border} px-2 py-2`}>
-
-                <div className="flex justify-around">
-
-                    <button
-                        onClick={() => navigate("/home")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">⌂</span>
-                        Home
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/MedPage")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">💊</span>
-                        My Medications
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/map")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">📍</span>
-                        Map
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/symptoms")}
-                        aria-current="page"
-                        className={`flex flex-col items-center ${currentTheme.text} font-semibold text-xs`}>
-                        <span className="text-lg">📝</span>
-                        Symptoms
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/coming-soon")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">📅</span>
-                        Calendar
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/profile")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">👤</span>
-                        Profile
-                    </button>
-
-                </div>
-            </nav>
+            <BottomNav />
 
         </div>
     )
