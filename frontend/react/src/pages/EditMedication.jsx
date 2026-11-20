@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
+import {ArrowLeft} from "lucide-react"
 
 function EditMedication() {
     const [searchParams] = useSearchParams()
@@ -95,7 +96,7 @@ function EditMedication() {
         "Custom schedule",
     ]
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
         event.preventDefault()
 
         if (!medicationName.trim()) {
@@ -123,7 +124,7 @@ function EditMedication() {
             return
         }
 
-        updateMedication(medication.id, {
+        const changes = {
             med_name: medicationName.trim(),
             med_type: medicationType,
             dosage: dosage.trim(),
@@ -144,7 +145,14 @@ function EditMedication() {
             requirements: instructions.trim(),
             avoid_notes: avoidNotes.trim(),
             storage_notes: storageNotes.trim(),
-        })
+        }
+
+        try {
+            await updateMedication(medication.id, changes)
+        } catch (error) {
+            setMessage(error.message)
+            return
+        }
 
         setMessage("Medication updated successfully!")
 
@@ -199,7 +207,7 @@ function EditMedication() {
                         aria-label="Back"
                         className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
                     >
-                        ←
+                        <ArrowLeft className="mx-auto block h-5 w-5" aria-hidden="true" />
                     </button>
 
                 </div>
@@ -280,6 +288,7 @@ function EditMedication() {
                             <input
                                 type="text"
                                 value={dosage}
+                                maxLength={50}
                                 onChange={(event) =>
                                     setDosage(event.target.value)
                                 }
@@ -296,7 +305,9 @@ function EditMedication() {
 
                             <input
                                 type="number"
-                                min="1"
+                                min="0.01"
+                                max="9.99"
+                                step="0.01"
                                 value={pillsPerDose}
                                 onChange={(event) =>
                                     setPillsPerDose(event.target.value)
@@ -490,6 +501,7 @@ function EditMedication() {
                                     <input
                                         type="number"
                                         min="1"
+                                        max="99999.99"
                                         value={pillQuantity}
                                         onChange={(event) =>
                                             setPillQuantity(
@@ -616,8 +628,8 @@ function EditMedication() {
                         <div
                             className={`rounded-xl p-4 mb-4 text-sm font-semibold ${
                                 message.includes("successfully")
-                                    ? "bg-green-50 text-green-700 border border-green-200"
-                                    : "bg-red-50 text-red-700 border border-red-200"
+                                    ? `${currentTheme.successSoft} border border-current/25`
+                                    : `${currentTheme.dangerSoft} border border-current/25`
                             }`}
                         >
                             {message}

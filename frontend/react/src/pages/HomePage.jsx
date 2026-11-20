@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
+import {ArrowRight, CalendarDays, Check, Clock, Hand, Pill, X} from "lucide-react"
+import BottomNav from "../components/BottomNav"
 
 function HomePage() {
     const [medicationFilter, setMedicationFilter] = useState("All")
@@ -10,7 +12,7 @@ function HomePage() {
 
     const navigate = useNavigate()
 
-    const {demoUser, demoMedications, doseLogs, getDoseKey, toggleDoseTaken} = useDemo()
+    const {demoUser, demoMedications, doseLogs, getDoseKey, toggleDoseTaken, signOut} = useDemo()
 
     const {theme, currentTheme} = useTheme()
     const today = new Date()
@@ -53,8 +55,8 @@ function HomePage() {
 
         // Do not mark a dose as missed if the medication
         // was added after that dose's scheduled time.
-        const addedAt = medication.added_at
-            ? new Date(medication.added_at)
+        const addedAt = medication.created_at
+            ? new Date(medication.created_at)
             : null
 
         if (addedAt && scheduledTime < addedAt) {
@@ -147,7 +149,7 @@ function HomePage() {
             {/* Welcome Header */}
             <div className="mb-4">
                 <p className={`${currentTheme.secondaryText} text-sm`}>
-                    Welcome to PillBug {demoUser ? `, ${demoUser.firstName}` : ""} 👋
+                    Welcome to PillBug {demoUser ? `, ${demoUser.first_name}` : ""} <Hand className="inline h-4 w-4" aria-hidden="true" />
                 </p>
 
                 <div className="flex items-center justify-between">
@@ -157,7 +159,7 @@ function HomePage() {
                         </h1>
 
                         <p className={`text-sm ${currentTheme.secondaryText}`}>
-                            📅 {formattedDate}
+                            <CalendarDays className="mr-1 inline h-4 w-4" aria-hidden="true" />{formattedDate}
                         </p>
                     </div>
 
@@ -170,7 +172,7 @@ function HomePage() {
                             className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full font-semibold`}
                         >
                             {demoUser
-                                ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
+                                ? `${demoUser.first_name.charAt(0)}${demoUser.last_name.charAt(0)}`
                                 : "?"}
                         </button>
 
@@ -180,14 +182,14 @@ function HomePage() {
                                 <div className="flex items-center gap-3 mb-3">
                                     <div className={`w-10 h-10 ${currentTheme.primary} text-white rounded-full flex items-center justify-center font-semibold`}>
                                         {demoUser
-                                            ? `${demoUser.firstName.charAt(0)}${demoUser.lastName.charAt(0)}`
+                                            ? `${demoUser.first_name.charAt(0)}${demoUser.last_name.charAt(0)}`
                                             : "?"}
                                     </div>
 
                                     <div className="min-w-0">
                                         <p className={`${currentTheme.text} font-semibold truncate`}>
                                             {demoUser
-                                                ? `${demoUser.firstName} ${demoUser.lastName}`
+                                                ? `${demoUser.first_name} ${demoUser.last_name}`
                                                 : "Guest"}
                                         </p>
                                         <p className={`${currentTheme.secondaryText} text-xs`}>
@@ -199,9 +201,10 @@ function HomePage() {
                                 <button
                                     onClick={() => {
                                         setShowProfileMenu(false)
+                                        signOut()
                                         navigate("/")
                                     }}
-                                    className="w-full text-left text-red-500 hover:bg-red-50 rounded-lg px-3 py-2 text-sm font-medium"
+                                    className={`w-full text-left ${currentTheme.dangerText} ${currentTheme.dangerHover} rounded-lg px-3 py-2 text-sm font-medium`}
                                 >
                                     Sign out
                                 </button>
@@ -229,9 +232,7 @@ function HomePage() {
 
                         {/* Clock Icon */}
                         <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                            <span className="text-xl">
-                                ◷
-                            </span>
+                            <Clock className="h-5 w-5" aria-hidden="true" />
                         </div>
 
                         {/* Next Dose Information */}
@@ -263,7 +264,7 @@ function HomePage() {
                                     </h2>
 
                                     <p className="text-sm opacity-80">
-                                        Tomorrow's next dose → {tomorrowNextDose.medication.med_name} · {formatTime(tomorrowNextDose.time)}
+                                        Tomorrow's next dose <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" /> {tomorrowNextDose.medication.med_name} · {formatTime(tomorrowNextDose.time)}
                                     </p>
                                 </>
                             ) : (
@@ -286,9 +287,7 @@ function HomePage() {
                         </div>
 
                         {/* Arrow */}
-                        <div className="text-xl">
-                            ➔
-                        </div>
+                        <ArrowRight className="h-5 w-5" aria-hidden="true" />
 
                     </div>
                 </div>
@@ -318,7 +317,7 @@ function HomePage() {
 
                 {/* Taken */}
                 <div className={`${currentTheme.card} rounded-xl p-3 text-center shadow-sm`}>
-                    <p className="text-xl font-bold text-blue-600">
+                    <p className={`text-xl font-bold ${theme === "dark" ? "text-blue-400" : "text-blue-600"}`}>
                         {takenCount}
                     </p>
                     <p className={`${currentTheme.secondaryText} text-xs`}>
@@ -328,7 +327,7 @@ function HomePage() {
 
                 {/* Pending */}
                 <div className={`${currentTheme.card} rounded-xl p-3 text-center shadow-sm`}>
-                    <p className="text-xl font-bold text-yellow-600">
+                    <p className={`text-xl font-bold ${theme === "dark" ? "text-yellow-400" : "text-yellow-600"}`}>
                         {pendingCount}
                     </p>
                     <p className={`${currentTheme.secondaryText} text-xs`}>
@@ -338,7 +337,7 @@ function HomePage() {
 
                 {/* Missed */}
                 <div className={`${currentTheme.card} rounded-xl p-3 text-center shadow-sm`}>
-                    <p className="text-xl font-bold text-red-600">
+                    <p className={`text-xl font-bold ${theme === "dark" ? "text-red-400" : "text-red-600"}`}>
                         {missedCount}
                     </p>
                     <p className={`${currentTheme.secondaryText} text-xs`}>
@@ -411,9 +410,7 @@ function HomePage() {
 
                         {/* Pill Icon */}
                         <div className={`w-16 h-16 ${currentTheme.background} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                            <span className="text-3xl">
-                                💊
-                            </span>
+                            <Pill className="h-8 w-8" aria-hidden="true" />
                         </div>
 
                         {/* Empty State Title */}
@@ -505,9 +502,7 @@ function HomePage() {
 
                                                         {/* Pill Icon */}
                                                         <div className={`w-10 h-10 ${currentTheme.background} rounded-full flex items-center justify-center`}>
-                                                            <span className="text-xl">
-                                                                💊
-                                                            </span>
+                                                            <Pill className="h-5 w-5" aria-hidden="true" />
                                                         </div>
 
                                                         {/* Medication Details */}
@@ -538,27 +533,19 @@ function HomePage() {
                                                             }`}
                                                         >
                                                             {status === "Taken" && (
-                                                                <span className="text-white text-sm">
-                                                                    ✓
-                                                                </span>
+                                                                <Check className="h-4 w-4 text-white" aria-hidden="true" />
                                                             )}
 
                                                             {status === "Due" && (
-                                                                <span className="text-yellow-600 text-sm">
-                                                                    ◷
-                                                                </span>
+                                                                <Clock className={`h-4 w-4 ${theme === "dark" ? "text-yellow-300" : "text-yellow-600"}`} aria-hidden="true" />
                                                             )}
 
                                                             {status === "Upcoming" && (
-                                                                <span className="text-orange-500 text-sm">
-                                                                    ◷
-                                                                </span>
+                                                                <Clock className={`h-4 w-4 ${theme === "dark" ? "text-orange-300" : "text-orange-500"}`} aria-hidden="true" />
                                                             )}
 
                                                             {status === "Missed" && (
-                                                                <span className="text-white text-sm">
-                                                                    ✕
-                                                                </span>
+                                                                <X className="h-4 w-4 text-white" aria-hidden="true" />
                                                             )}
                                                         </button>
                                                     </div>
@@ -669,54 +656,7 @@ function HomePage() {
             </div>
 
             {/* Bottom Navigation */}
-            <nav className={`fixed bottom-0 left-0 right-0 ${currentTheme.card} border-t ${currentTheme.border} px-2 py-2`}>
-
-                <div className="flex justify-around">
-
-                    <button
-                        onClick={() => navigate("/home")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">⌂</span>
-                        Home
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/MedPage")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">💊</span>
-                        My Medications
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/map")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">📍</span>
-                        Map
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/symptoms")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">📝</span>
-                        Symptoms
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/coming-soon")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">📅</span>
-                        Calendar
-                    </button>
-
-                    <button
-                        onClick={() => navigate("/profile")}
-                        className={`flex flex-col items-center ${currentTheme.secondaryText} text-xs`}>
-                        <span className="text-lg">👤</span>
-                        Profile
-                    </button>
-
-                </div>
-            </nav>
+            <BottomNav />
 
         </div>
     )

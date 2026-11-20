@@ -4,15 +4,37 @@ import {useTheme} from "../context/ThemeContext"
 
 const severities = ["Mild", "Moderate", "Severe"]
 
+// Number of days each range reaches back, counting today. null means no limit.
+const ranges = [
+    {label: "Today", days: 1},
+    {label: "Past 7 days", days: 7},
+    {label: "Past 30 days", days: 30},
+    {label: "All", days: null},
+]
+
+function toDateKey(date) {
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+
+    return `${date.getFullYear()}-${month}-${day}`
+}
+
+// Entry dates are "YYYY-MM-DD" strings, so they can be compared directly with this cutoff.
+function getCutoffKey(days) {
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - (days - 1))
+
+    return toDateKey(cutoff)
+}
+
 function formatEntryDate(entry) {
-    const date = new Date(`${entry.date}T${entry.time}`)
+    const date = new Date(`${entry.date}T${entry.time || "00:00"}`)
 
     return date.toLocaleString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
+        ...(entry.time && {hour: "numeric", minute: "2-digit"}),
     })
 }
 
@@ -31,6 +53,7 @@ function formatAge(isoString) {
 
 function SymptomHistory() {
     const [search, setSearch] = useState("")
+    const [range, setRange] = useState("Today")
     const [editingId, setEditingId] = useState(null)
     // Unsaved edits, keyed by entry id. They are only applied when "Save changes" is pressed.
     const [drafts, setDrafts] = useState({})
@@ -41,12 +64,20 @@ function SymptomHistory() {
     const inputClass = `w-full rounded-lg border ${currentTheme.border} bg-transparent px-3 py-2 text-sm outline-none ${currentTheme.text}`
 
     const query = search.trim().toLowerCase()
-    const visibleEntries = symptomLogs.filter(
-        (entry) =>
-            query === "" ||
-            entry.symptom.toLowerCase().includes(query) ||
-            entry.notes.toLowerCase().includes(query)
-    )
+    const activeRange = ranges.find((item) => item.label === range)
+    const cutoffKey = activeRange.days ? getCutoffKey(activeRange.days) : null
+
+    // Searching looks through every day; otherwise only the selected range is shown.
+    const visibleEntries = symptomLogs.filter((entry) => {
+        if (query !== "") {
+            return (
+                entry.symptom.toLowerCase().includes(query) ||
+                entry.notes.toLowerCase().includes(query)
+            )
+        }
+
+        return cutoffKey === null || entry.date >= cutoffKey
+    })
 
     const hasChanges = Object.keys(drafts).length > 0
 
@@ -66,30 +97,40 @@ function SymptomHistory() {
         }))
     }
 
-    function saveChanges() {
-        Object.entries(drafts).forEach(([id, draft]) => {
-            if (!draft.symptom.trim()) {
-                return
-            }
+    async function saveChanges() {
+        try {
+            for (const [id, draft] of Object.entries(drafts)) {
+                if (!draft.symptom.trim()) {
+                    continue
+                }
 
-            updateSymptomEntry(Number(id), {
-                ...draft,
-                symptom: draft.symptom.trim(),
-                duration: draft.duration.trim(),
-                notes: draft.notes.trim(),
-            })
-        })
+                await updateSymptomEntry(Number(id), {
+                    ...draft,
+                    symptom: draft.symptom.trim(),
+                    duration: draft.duration.trim(),
+                    notes: draft.notes.trim(),
+                })
+            }
+        } catch (error) {
+            alert(error.message)
+            return
+        }
 
         setDrafts({})
         setEditingId(null)
     }
 
-    function handleDelete(entry) {
+    async function handleDelete(entry) {
         if (!window.confirm(`Delete this ${entry.symptom} entry?`)) {
             return
         }
 
-        deleteSymptomEntry(entry.id)
+        try {
+            await deleteSymptomEntry(entry.id)
+        } catch (error) {
+            alert(error.message)
+            return
+        }
 
         setDrafts((current) => {
             const updated = {...current}
@@ -113,7 +154,7 @@ function SymptomHistory() {
                 </div>
 
                 <span className={`${currentTheme.secondaryText} text-xs whitespace-nowrap`}>
-                    {symptomLogs.length} {symptomLogs.length === 1 ? "entry" : "entries"}
+                    {visibleEntries.length} of {symptomLogs.length}
                 </span>
             </div>
 
@@ -126,6 +167,31 @@ function SymptomHistory() {
                 aria-label="Search saved symptoms"
                 className={`${inputClass} mb-3`}
             />
+
+            {/* Date Range Filters */}
+            <div className="flex gap-2 mb-3 overflow-x-auto">
+                {ranges.map(({label}) => (
+                    <button
+                        key={label}
+                        type="button"
+                        onClick={() => setRange(label)}
+                        disabled={query !== ""}
+                        className={`px-3 py-1.5 whitespace-nowrap rounded-lg text-sm font-medium disabled:opacity-50 ${
+                            range === label
+                                ? `${currentTheme.primary} text-white`
+                                : `border ${currentTheme.border} ${currentTheme.secondaryText}`
+                        }`}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+
+            {query !== "" && (
+                <p className={`${currentTheme.secondaryText} text-xs mb-3`}>
+                    Searching all days.
+                </p>
+            )}
 
             {/* Entries */}
             <ul className="space-y-3 mb-4">
@@ -149,7 +215,7 @@ function SymptomHistory() {
                                 </div>
 
                                 <span className={`${currentTheme.secondaryText} text-xs whitespace-nowrap`}>
-                                    {formatAge(entry.logged_at)}
+                                    {entry.logged_at && formatAge(entry.logged_at)}
                                 </span>
                             </div>
 
@@ -169,6 +235,7 @@ function SymptomHistory() {
                                         aria-label="Severity"
                                         className={`${inputClass} ${currentTheme.card}`}
                                     >
+                                        {draft.severity === "" && <option value="">Not set</option>}
                                         {severities.map((severity) => (
                                             <option key={severity} value={severity}>
                                                 {severity}
@@ -196,7 +263,7 @@ function SymptomHistory() {
                                 </div>
                             ) : (
                                 <div className={`${currentTheme.secondaryText} text-sm mt-2`}>
-                                    <p>Self-reported severity: {entry.severity}</p>
+                                    {entry.severity && <p>Self-reported severity: {entry.severity}</p>}
                                     {entry.duration && <p>Duration: {entry.duration}</p>}
                                     {entry.notes && <p>{entry.notes}</p>}
                                 </div>
@@ -206,7 +273,7 @@ function SymptomHistory() {
                                 <button
                                     type="button"
                                     onClick={() => setEditingId(isEditing ? null : entry.id)}
-                                    className="text-blue-600"
+                                    className={currentTheme.accentText}
                                 >
                                     {isEditing ? "Done" : "Review / edit"}
                                 </button>
@@ -214,7 +281,7 @@ function SymptomHistory() {
                                 <button
                                     type="button"
                                     onClick={() => handleDelete(entry)}
-                                    className="text-red-500"
+                                    className={currentTheme.dangerText}
                                 >
                                     Delete
                                 </button>
@@ -225,7 +292,11 @@ function SymptomHistory() {
 
                 {visibleEntries.length === 0 && (
                     <li className={`${currentTheme.secondaryText} text-sm text-center py-2`}>
-                        No entries match your search.
+                        {query !== ""
+                            ? "No entries match your search."
+                            : range === "Today"
+                                ? "No entries today. Choose a longer range or search to see earlier ones."
+                                : "No entries in this range."}
                     </li>
                 )}
             </ul>
