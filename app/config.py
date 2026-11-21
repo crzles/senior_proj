@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     GOOGLE_MAPS_API_KEY: str
     VITE_GOOGLE_MAPS_API_KEY: str
+    # For the AI Insights page. Optional: without a key the page says insights aren't set up.
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     model_config = SettingsConfigDict (
         env_file=".env",
