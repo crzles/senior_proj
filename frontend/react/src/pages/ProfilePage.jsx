@@ -41,7 +41,7 @@ function ProfilePage() {
             <main className="mx-auto w-full max-w-2xl">
                 <div className="mb-6">
                     <h1 className={`${currentTheme.text} text-2xl font-bold`}>
-                        User Profile
+                        Your Profile
                     </h1>
                     <p className={`${currentTheme.secondaryText} mt-1 text-sm`}>
                         Manage your personal health information.

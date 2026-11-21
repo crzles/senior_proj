@@ -27,10 +27,6 @@ function MedicationList() {
         return matchesSearch && matchesType
     })
 
-    function goToAddMedication() {
-        navigate("/add-medication")
-    }
-
     function goToEditMedication(id) {
         navigate(`/edit-medication?id=${id}`)
     }
