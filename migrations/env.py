@@ -30,6 +30,7 @@ from app.models import warning
 from app.models import medication
 from app.models import health
 from app.models import drug_label
+from app.models import user_allergy
 
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
