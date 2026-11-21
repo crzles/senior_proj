@@ -1,7 +1,9 @@
+
 import { useDemo } from "../context/DemoContext"
 import { useTheme } from "../context/ThemeContext"
 import SymptomHistory from "../components/SymptomHistory"
 import UserInformation from "../components/UserInformation"
+import Allergies from "../components/Allergies"
 import {ChevronDown, ClipboardList, Heart, ShieldAlert, User} from "lucide-react"
 import HealthHabits from "../components/HealthHabits"
 import BottomNav from "../components/BottomNav"
@@ -73,6 +75,8 @@ function ProfilePage() {
                             </summary>
                             {title === "User information" && demoUser ? (
                                 <UserInformation />
+                            ) : title === "Allergens" ? (
+                                <Allergies />
                             ) : title === "Health habits" ? (
                                 <HealthHabits />
                             ) : title === "Symptom history" && symptomLogs.length > 0 ? (
