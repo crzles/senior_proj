@@ -6,7 +6,8 @@ import InsightCard from "./InsightCard"
 // "Your AI summary": a short paragraph from Rollie about the selected range.
 // OWNER: Partner A
 // TODO: call getInsights() from ../../api/insights (POST /api/insights/, backed by Gemini) and
-//       show its result here. Pass `days` to the backend once it accepts a range.
+//       show its result here: getInsights(days). The route already reads the user's data from the
+//       database for that range. (Demo mode has no backend user, so show sample text there.)
 // TODO: add a loading state and show any error message from the request.
 // eslint-disable-next-line no-unused-vars -- `days` is unused until the real data is wired in
 function AiSummaryCard({days}) {
