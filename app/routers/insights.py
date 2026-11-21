@@ -1,7 +1,7 @@
 import json
 from datetime import date, timedelta
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
@@ -16,7 +16,6 @@ router = APIRouter(
 )
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-DAYS = 30
 
 SYSTEM_PROMPT = (
     "You are Rollie, the friendly insights assistant inside PillBug, a medication tracking app. "
@@ -29,8 +28,8 @@ SYSTEM_PROMPT = (
 )
 
 
-def build_summary(db: Session, user: App_User) -> dict:
-    since = date.today() - timedelta(days=DAYS)
+def build_summary(db: Session, user: App_User, days: int) -> dict:
+    since = date.today() - timedelta(days=days - 1)
     meds = db.query(Medication).filter(Medication.user_id == user.id).all()
 
     med_summaries = []
@@ -42,7 +41,7 @@ def build_summary(db: Session, user: App_User) -> dict:
             "dosage": med.dosage,
             "schedule": med.recurrence,
             "reminder_times": med.reminder_times or [],
-            "doses_taken_last_30_days": taken,
+            "doses_taken_in_range": taken,
             "doses_scheduled_per_day": per_day,
             "pills_left": float(med.pill_qty) if med.pill_qty is not None else None,
             "pills_per_dose": float(med.pills_per_dose),
@@ -55,8 +54,9 @@ def build_summary(db: Session, user: App_User) -> dict:
 
     return {
         "today": date.today().isoformat(),
+        "range_days": days,
         "medications": med_summaries,
-        "symptoms_last_30_days": [
+        "symptoms_in_range": [
             {
                 "symptom": s.symptom,
                 "date": s.date.isoformat(),
@@ -72,13 +72,13 @@ def build_summary(db: Session, user: App_User) -> dict:
 
 # POST /api/insights/ -> asks Gemini for insights on the signed-in user's own data
 @router.post("/")
-def get_insights(db: Session = Depends(get_db), curr_user: App_User = Depends(get_curr_user)):
+def get_insights(days: int = Query(7, ge=1, le=90), db: Session = Depends(get_db), curr_user: App_User = Depends(get_curr_user)):
     if not settings.GEMINI_API_KEY:
         raise HTTPException(status_code=503, detail="AI insights aren't set up yet. Add GEMINI_API_KEY to the backend .env.")
 
-    summary = build_summary(db, curr_user)
+    summary = build_summary(db, curr_user, days)
 
-    if not summary["medications"] and not summary["symptoms_last_30_days"]:
+    if not summary["medications"] and not summary["symptoms_in_range"]:
         return {"insights": [], "empty": True}
 
     try:
