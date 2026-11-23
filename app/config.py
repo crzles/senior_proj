@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     GOOGLE_MAPS_API_KEY: str
     VITE_GOOGLE_MAPS_API_KEY: str
+    GEMINI_API_KEY: str | None = None
 
     model_config = SettingsConfigDict (
         env_file=".env",
