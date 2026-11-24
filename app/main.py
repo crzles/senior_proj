@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi import FastAPI, HTTPException
 from app.database import engine, Base
-from app.routers import auth, drug_label, medication, reminders, doses, refills, symptoms, users, pharmacy, allergies
+from app.routers import auth, drug_label, medication, reminders, doses, refills, symptoms, users, pharmacy, allergies, ai_insights
 
 
 
@@ -29,6 +29,7 @@ app.include_router(refills.router)
 app.include_router(symptoms.router)
 app.include_router(pharmacy.router)
 app.include_router(allergies.router)
+app.include_router(ai_insights.router)
 
 ROOT_DIR = Path(__file__).resolve().parent.parent  # senior_proj/
 DIST_DIR = ROOT_DIR / "frontend" / "react" / "dist"
